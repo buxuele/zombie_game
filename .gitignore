@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Production Build
+dist/
+
+# OS & Logs
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test / Debug Artifacts
+/collision_fixed_screenshot.png
+/custom_bg_screenshot.png
+/game_blended_bg.png
+/game_jump_screenshot.png
+/game_restart_screenshot.png
+/game_running_screenshot.png
+/game_screenshot.png
+/giant_mech_laser_screenshot.png
+/grounded_and_centered_bg_final.png
+/grounded_and_centered_bg_verified.png
+/grounded_and_centered_sky.png
+/grounded_horde_centered_bg.png
+/horde_dynamic_running.png
+/lively_horde_running_screenshot.png
+/panoramic_clean_screenshot.png
+/seamless_bg_screenshot.png
+/game_over_fun_screen.png

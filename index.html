@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>僵尸狂潮 PC 网页版</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232ecc71'/><circle cx='40' cy='40' r='12' fill='%23ffffff'/><circle cx='44' cy='40' r='6' fill='%23000000'/><circle cx='70' cy='40' r='10' fill='%23ffffff'/><circle cx='72' cy='40' r='5' fill='%23000000'/><rect x='35' y='65' width='35' height='10' rx='4' fill='%2315181e'/></svg>">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div id="app-container">
+    <div id="game-viewport">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- In-Game HUD -->
+      <div id="hud-overlay">
+        <div class="hud-top-bar">
+          <div class="hud-group">
+            <div class="hud-pill">
+              <span class="hud-label">大脑</span>
+              <span id="hud-brains" class="hud-val-brains">0</span>
+            </div>
+            <div class="hud-pill">
+              <span class="hud-label">金币</span>
+              <span id="hud-coins" class="hud-val-coins">0</span>
+            </div>
+            <div class="hud-pill">
+              <span class="hud-label">军团</span>
+              <span id="hud-zombies" class="hud-val-zombies">1</span>
+            </div>
+            <div class="hud-pill">
+              <span class="hud-label">距离</span>
+              <span id="hud-distance" class="hud-val-distance">0 m</span>
+            </div>
+          </div>
+
+          <div class="hud-group">
+            <button id="btn-hud-pause" class="hud-action-btn">暂停</button>
+            <button id="btn-hud-sound" class="hud-action-btn">声音 开</button>
+            <button id="btn-hud-log" class="hud-action-btn">调试日志</button>
+          </div>
+        </div>
+
+        <div id="transform-bar-container">
+          <div id="transform-title" class="transform-title">超能变身</div>
+          <div class="transform-progress-track">
+            <div id="transform-progress-fill" class="transform-progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="hud-controls-hint">
+          <span>长按/短按: 空格键或鼠标左键</span>
+          <span>暂停: P / Esc</span>
+          <span>静音: M</span>
+          <span>日志: L</span>
+        </div>
+      </div>
+
+      <!-- Main Menu Screen -->
+      <div id="main-menu-screen" class="screen-overlay">
+        <div class="modal-panel">
+          <div class="title-container">
+            <div class="game-logo-text">僵尸狂潮</div>
+            <div class="game-sub-logo">PC 全屏极速版</div>
+          </div>
+
+          <div class="menu-stats-row">
+            <div class="hud-pill">
+              <span class="hud-label">总大脑</span>
+              <span id="menu-total-brains" class="hud-val-brains">0</span>
+            </div>
+            <div class="hud-pill">
+              <span class="hud-label">总金币</span>
+              <span id="menu-total-coins" class="hud-val-coins">0</span>
+            </div>
+            <div class="hud-pill">
+              <span class="hud-label">最高纪录</span>
+              <span id="menu-high-score" class="hud-val-distance">0 m</span>
+            </div>
+          </div>
+
+          <div class="menu-actions-grid">
+            <button id="btn-open-shop" class="btn">商店升级</button>
+            <button id="btn-open-scratch" class="btn">刮刮乐</button>
+            <button id="btn-open-missions" class="btn">悬赏任务</button>
+          </div>
+
+          <div class="menu-footer-actions">
+            <button id="btn-start-game" class="btn btn-primary">开始奔跑</button>
+            <button id="btn-toggle-sound-menu" class="btn">声音 开</button>
+            <button id="btn-toggle-log-menu" class="btn">调试日志</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shop Modal -->
+      <div id="shop-modal" class="screen-overlay" style="display: none;">
+        <div class="modal-panel">
+          <div class="modal-header">
+            <div class="modal-title">基因与补给商店</div>
+            <button id="btn-close-shop" class="modal-close-btn">返回</button>
+          </div>
+
+          <div class="shop-tabs">
+            <button class="shop-tab active" data-tab="upgrades">属性升级</button>
+            <button class="shop-tab" data-tab="hats">个性装扮</button>
+          </div>
+
+          <div id="shop-list-container" class="shop-list">
+            <!-- Dynamically Rendered -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Scratch Card Modal -->
+      <div id="scratch-modal" class="screen-overlay" style="display: none;">
+        <div class="modal-panel">
+          <div class="modal-header">
+            <div class="modal-title">幸运刮刮乐</div>
+            <button id="btn-close-scratch" class="modal-close-btn">返回</button>
+          </div>
+
+          <div class="scratch-container">
+            <div class="scratch-info-bar">
+              <span>消耗 100 金币刮一次</span>
+              <span id="scratch-wallet-coins">拥有: 0 金币</span>
+            </div>
+
+            <div class="scratch-canvas-wrap">
+              <canvas id="scratch-result-canvas" width="360" height="220"></canvas>
+              <canvas id="scratch-cover-canvas" width="360" height="220"></canvas>
+            </div>
+
+            <div id="scratch-result-message" style="font-weight: 700; min-height: 20px; color: var(--accent-gold);">
+              移动鼠标刮开灰色涂层
+            </div>
+
+            <button id="btn-buy-scratch" class="btn btn-gold">购买新彩票</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Missions Modal -->
+      <div id="missions-modal" class="screen-overlay" style="display: none;">
+        <div class="modal-panel">
+          <div class="modal-header">
+            <div class="modal-title">悬赏猎杀任务</div>
+            <button id="btn-close-missions" class="modal-close-btn">返回</button>
+          </div>
+
+          <div id="missions-list-container" class="missions-list">
+            <!-- Dynamically Rendered -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Pause Screen -->
+      <div id="pause-modal" class="screen-overlay" style="display: none;">
+        <div class="modal-panel" style="width: 360px; text-align: center;">
+          <div class="modal-title" style="margin-bottom: 20px;">游戏暂停</div>
+          <div class="pause-menu">
+            <button id="btn-resume-game" class="btn btn-primary">继续游戏</button>
+            <button id="btn-toggle-sound-pause" class="btn">声音 开</button>
+            <button id="btn-quit-to-menu" class="btn btn-danger">退出至主菜单</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Game Over Screen -->
+      <div id="game-over-modal" class="screen-overlay" style="display: none;">
+        <div class="modal-panel game-over-panel" style="text-align: center; max-width: 480px;">
+          <!-- Interactive Dizzy Zombie Mascot Canvas -->
+          <div class="go-mascot-wrapper">
+            <canvas id="go-mascot-canvas" width="160" height="95"></canvas>
+            <div id="go-mascot-hint" class="go-mascot-hint">戳一下晕倒的小僵尸</div>
+          </div>
+
+          <div class="go-header-row">
+            <div class="modal-title" style="color: var(--accent-red); margin: 0;">军团覆灭</div>
+            <div id="go-evaluation-badge" class="go-badge">A+ 街区破坏狂</div>
+          </div>
+          
+          <div id="go-new-record-banner" class="go-new-record-pill" style="display: none;">
+            突破历史最高纪录
+          </div>
+
+          <div id="go-death-reason" class="go-death-reason">
+            连环追尾 5 辆车，本市交警正在赶往现场
+          </div>
+
+          <div class="game-over-stats">
+            <div class="stat-box">
+              <div class="stat-box-label">本次奔跑距离</div>
+              <div id="go-distance" class="stat-box-value">0 m</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-label">收获大脑</div>
+              <div id="go-brains" class="stat-box-value" style="color: var(--accent-pink);">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-label">收集金币</div>
+              <div id="go-coins" class="stat-box-value" style="color: var(--accent-gold);">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-label">掀翻载具</div>
+              <div id="go-vehicles" class="stat-box-value" style="color: var(--accent-green);">0</div>
+            </div>
+          </div>
+
+          <div class="go-actions-row">
+            <button id="btn-retry-game" class="btn btn-primary">再次出征</button>
+            <button id="btn-open-scratch-gameover" class="btn btn-gold">刮张彩票转运</button>
+            <button id="btn-go-to-shop" class="btn">前往商店</button>
+            <button id="btn-go-to-menu" class="btn">主菜单</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- On-Screen Realtime Log Console Drawer -->
+      <div id="log-console-drawer" class="log-drawer" style="display: none;">
+        <div class="log-drawer-header">
+          <span>实时运行日志监控</span>
+          <button id="btn-close-log-drawer" class="modal-close-btn" style="padding: 2px 8px; font-size: 11px;">关闭</button>
+        </div>
+        <div id="log-entries-list" class="log-entries-list">
+          <!-- Live entries -->
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
