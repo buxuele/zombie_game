@@ -1,6 +1,7 @@
 import { Vehicle } from '../entities/Vehicle.js';
 import { Civilian } from '../entities/Civilian.js';
 import { Coin, BrainCollectible, Bomb, MysteryBox } from '../entities/Obstacle.js';
+import { biomeManager } from './BiomeManager.js';
 
 export class WarningBarrier {
   constructor(x, groundY) {
@@ -286,23 +287,25 @@ export class LevelGenerator {
       const width = plat.endX - plat.startX;
       const midX = (plat.startX + plat.endX) / 2;
 
-      if (midX < 7000) {
-        // Modern City Highway Asphalt (Seamless Dark Slate with top curb highlight)
+      const roadStyle = biomeManager.getRoadStyleAt(midX);
+
+      if (roadStyle === 'CITY' || roadStyle === 'CYBER') {
+        // Modern City / Cyber Highway Asphalt
         const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
-        roadGrad.addColorStop(0, '#1c202a');
-        roadGrad.addColorStop(0.12, '#151821');
-        roadGrad.addColorStop(1, '#0e1017');
+        roadGrad.addColorStop(0, roadStyle === 'CYBER' ? '#0f1423' : '#1c202a');
+        roadGrad.addColorStop(0.12, roadStyle === 'CYBER' ? '#0a0d18' : '#151821');
+        roadGrad.addColorStop(1, '#080a10');
         ctx.fillStyle = roadGrad;
         ctx.fillRect(renderX, this.groundY, width, 180);
 
         // 3px Curb Edge Top Highlight
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = roadStyle === 'CYBER' ? '#00d2d3' : '#475569';
         ctx.fillRect(renderX, this.groundY, width, 3);
-        ctx.fillStyle = '#64748b';
+        ctx.fillStyle = roadStyle === 'CYBER' ? '#54a0ff' : '#64748b';
         ctx.fillRect(renderX, this.groundY + 3, width, 1);
 
-        // Glowing Center Yellow Dashes
-        ctx.fillStyle = '#f1c40f';
+        // Glowing Center Dashes
+        ctx.fillStyle = roadStyle === 'CYBER' ? '#f368e0' : '#f1c40f';
         const dashWidth = 44;
         const dashGap = 44;
         const startOffset = Math.floor(plat.startX / (dashWidth + dashGap)) * (dashWidth + dashGap);
@@ -311,13 +314,13 @@ export class LevelGenerator {
             ctx.fillRect(dx - cameraX, this.groundY + 48, dashWidth, 4.5);
           }
         }
-      } else if (midX < 9500) {
+      } else if (roadStyle === 'TUNNEL') {
         // Tunnel Dark Concrete
         ctx.fillStyle = '#15181e';
         ctx.fillRect(renderX, this.groundY, width, 180);
         ctx.fillStyle = '#f39c12';
         ctx.fillRect(renderX, this.groundY, width, 4);
-      } else if (midX < 16500) {
+      } else if (roadStyle === 'BEACH') {
         // Beach Wooden Boardwalk & Golden Sand
         ctx.fillStyle = '#d4ac0d';
         ctx.fillRect(renderX, this.groundY, width, 180);
@@ -328,7 +331,7 @@ export class LevelGenerator {
         for (let dx = plat.startX; dx < plat.endX; dx += 24) {
           ctx.fillRect(dx - cameraX, this.groundY, 2, 180);
         }
-      } else if (midX < 19000) {
+      } else if (roadStyle === 'BRIDGE') {
         // Suspension Sea Bridge Steel Deck
         ctx.fillStyle = '#34495e';
         ctx.fillRect(renderX, this.groundY, width, 180);
@@ -336,8 +339,41 @@ export class LevelGenerator {
         ctx.fillRect(renderX, this.groundY, width, 6);
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(renderX, this.groundY + 45, width, 3);
+      } else if (roadStyle === 'SCI_FI') {
+        // Sci-Fi Tech Road
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        roadGrad.addColorStop(0, '#102a43');
+        roadGrad.addColorStop(0.2, '#0b1d30');
+        roadGrad.addColorStop(1, '#050c14');
+        ctx.fillStyle = roadGrad;
+        ctx.fillRect(renderX, this.groundY, width, 180);
+
+        ctx.fillStyle = '#10ac84';
+        ctx.fillRect(renderX, this.groundY, width, 3);
+        ctx.fillStyle = '#1dd1a1';
+        ctx.fillRect(renderX, this.groundY + 48, width, 2);
+      } else if (roadStyle === 'FOREST') {
+        // Deep Forest Mossy Asphalt
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        roadGrad.addColorStop(0, '#1e272e');
+        roadGrad.addColorStop(0.2, '#151d23');
+        roadGrad.addColorStop(1, '#0d1317');
+        ctx.fillStyle = roadGrad;
+        ctx.fillRect(renderX, this.groundY, width, 180);
+
+        ctx.fillStyle = '#2ed573';
+        ctx.fillRect(renderX, this.groundY, width, 3);
+        ctx.fillStyle = '#f1c40f';
+        const dashWidth = 40;
+        const dashGap = 40;
+        const startOffset = Math.floor(plat.startX / (dashWidth + dashGap)) * (dashWidth + dashGap);
+        for (let dx = startOffset; dx < plat.endX; dx += dashWidth + dashGap) {
+          if (dx >= plat.startX && dx + dashWidth <= plat.endX) {
+            ctx.fillRect(dx - cameraX, this.groundY + 48, dashWidth, 4);
+          }
+        }
       } else {
-        // Golden Desert Sandstone Road
+        // Golden Desert / Sunset Sandstone Road
         ctx.fillStyle = '#c68a4c';
         ctx.fillRect(renderX, this.groundY, width, 180);
         ctx.fillStyle = '#e59866';

@@ -9,31 +9,34 @@ export class AssetLoader {
 
   async loadAll() {
     try {
-      // 1. Priority loading: Check custom user backgrounds folder first, then fallback to default
-      const cityBg = await this.loadFirstAvailable([
-        '/backgrounds/city.png',
-        '/backgrounds/city.jpg',
-        '/backgrounds/city.webp',
-        '/images/city_bg.jpg'
-      ]);
+      this.backgrounds = [];
 
-      const beachBg = await this.loadFirstAvailable([
-        '/backgrounds/beach.png',
-        '/backgrounds/beach.jpg',
-        '/backgrounds/beach.webp',
-        '/images/beach_bg.jpg'
-      ]);
+      const bgConfigs = [
+        { id: 'city', name: '大都会夜景', files: ['/backgrounds/city.jpg', '/backgrounds/city.png', '/backgrounds/city.webp', '/images/city_bg.jpg'], roadStyle: 'CITY' },
+        { id: 'beach', name: '热带海岸', files: ['/backgrounds/beach.jpg', '/backgrounds/beach.png', '/backgrounds/beach.webp', '/images/beach_bg.jpg'], roadStyle: 'BEACH' },
+        { id: 'desert', name: '黄金沙漠', files: ['/backgrounds/desert.jpg', '/backgrounds/desert.png', '/backgrounds/desert.webp', '/images/desert_bg.jpg'], roadStyle: 'DESERT' },
+        { id: 'b1', name: '赛博霓虹都市', files: ['/backgrounds/b1.jpg', '/backgrounds/b1.png', '/backgrounds/b1.webp'], roadStyle: 'CYBER' },
+        { id: 'b2', name: '日落晚霞峡谷', files: ['/backgrounds/b2.jpg', '/backgrounds/b2.png', '/backgrounds/b2.webp'], roadStyle: 'SUNSET' },
+        { id: 'b3', name: '未来科幻基地', files: ['/backgrounds/b3.jpg', '/backgrounds/b3.png', '/backgrounds/b3.webp'], roadStyle: 'SCI_FI' },
+        { id: 'b4', name: '幽暗深渊森林', files: ['/backgrounds/b4.png', '/backgrounds/b4.jpg', '/backgrounds/b4.webp'], roadStyle: 'FOREST' },
+      ];
 
-      const desertBg = await this.loadFirstAvailable([
-        '/backgrounds/desert.png',
-        '/backgrounds/desert.jpg',
-        '/backgrounds/desert.webp',
-        '/images/desert_bg.jpg'
-      ]);
+      for (const cfg of bgConfigs) {
+        const img = await this.loadFirstAvailable(cfg.files);
+        if (img) {
+          this.backgrounds.push({
+            id: cfg.id,
+            name: cfg.name,
+            img,
+            roadStyle: cfg.roadStyle
+          });
+          this.images[`${cfg.id}Bg`] = img;
+        }
+      }
 
-      this.images.cityBg = cityBg;
-      this.images.beachBg = beachBg;
-      this.images.desertBg = desertBg;
+      this.images.cityBg = this.images.cityBg || (this.backgrounds[0] ? this.backgrounds[0].img : null);
+      this.images.beachBg = this.images.beachBg || (this.backgrounds[1] ? this.backgrounds[1].img : null);
+      this.images.desertBg = this.images.desertBg || (this.backgrounds[2] ? this.backgrounds[2].img : null);
 
       const propsImg = await this.loadFirstAvailable(['/backgrounds/props.png', '/images/props.jpg']);
       const vehiclesImg = await this.loadFirstAvailable(['/backgrounds/vehicles.png', '/images/vehicles.jpg']);

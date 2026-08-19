@@ -2,6 +2,7 @@ import { Zombie } from '../src/entities/Zombie.js';
 import { ZombieHorde } from '../src/entities/ZombieHorde.js';
 import { VEHICLE_TYPES, Vehicle } from '../src/entities/Vehicle.js';
 import { Storage } from '../src/systems/Storage.js';
+import { BiomeManager } from '../src/systems/BiomeManager.js';
 
 let passed = 0;
 let failed = 0;
@@ -221,6 +222,46 @@ function testTrampolineAndMovingTraffic() {
   assert(z.vy === -680, 'Trampoline launches zombie skyward with -680 vy');
 }
 
+// 11. Biome Random Switch & Non-Repeating Previous Zone Test
+function testBiomeRandomNonRepeating() {
+  console.log('\n--- Testing Biome Random Selection & Non-Repeating Constraint ---');
+  const bm = new BiomeManager();
+  
+  const mockAssets = {
+    backgrounds: [
+      { id: 'city', name: '大都会夜景', roadStyle: 'CITY' },
+      { id: 'beach', name: '热带海岸', roadStyle: 'BEACH' },
+      { id: 'desert', name: '黄金沙漠', roadStyle: 'DESERT' },
+      { id: 'b1', name: '赛博霓虹都市', roadStyle: 'CYBER' },
+      { id: 'b2', name: '日落晚霞峡谷', roadStyle: 'SUNSET' },
+      { id: 'b3', name: '未来科幻基地', roadStyle: 'SCI_FI' },
+      { id: 'b4', name: '幽暗深渊森林', roadStyle: 'FOREST' }
+    ]
+  };
+
+  // Generate 100 consecutive zones across 800,000px distance
+  bm.ensureDistance(800000, mockAssets);
+  assert(bm.zones.length >= 80, `Generated ${bm.zones.length} consecutive zones`);
+
+  let repetitionFound = false;
+  for (let i = 1; i < bm.zones.length; i++) {
+    const prevZone = bm.zones[i - 1];
+    const currZone = bm.zones[i];
+    if (prevZone.theme.id === currZone.theme.id) {
+      repetitionFound = true;
+      console.error(`Repetition detected at zone #${i}: ${currZone.theme.id} === ${prevZone.theme.id}`);
+      break;
+    }
+  }
+
+  assert(repetitionFound === false, 'Strict guarantee: Consecutive biomes NEVER repeat the same background theme');
+
+  // Verify road style mapping
+  const testX = bm.zones[0].startX + 100;
+  const style = bm.getRoadStyleAt(testX);
+  assert(style === bm.zones[0].roadStyle, `Road style at ${testX}px matches active zone style: ${style}`);
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -232,6 +273,7 @@ testSecondaryHatSpringPhysics();
 testVehicleSuspensionState();
 testCivilianInfectionInheritance();
 testTrampolineAndMovingTraffic();
+testBiomeRandomNonRepeating();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

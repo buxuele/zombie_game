@@ -6,6 +6,7 @@ import { assets } from './engine/AssetLoader.js';
 import { ShopUI } from './systems/Shop.js';
 import { ScratchCardGame } from './systems/ScratchCard.js';
 import { MissionsUI } from './systems/Missions.js';
+import { biomeManager } from './systems/BiomeManager.js';
 
 window.addEventListener('DOMContentLoaded', async () => {
   const canvas = document.getElementById('game-canvas');
@@ -598,8 +599,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateMenuStats();
   });
 
-  // Preload Assets in background
-  assets.loadAll();
+  // Preload Assets and initialize dynamic biomes
+  await assets.loadAll();
+  biomeManager.reset();
 
   // Initial stats & log
   updateMenuStats();

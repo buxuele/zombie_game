@@ -8,6 +8,7 @@ import { TransformationManager } from '../entities/Transformations.js';
 import { storage } from '../systems/Storage.js';
 import { audio } from './Audio.js';
 import { logger } from '../systems/Logger.js';
+import { biomeManager } from '../systems/BiomeManager.js';
 
 export class Game {
   constructor(canvas, callbacks = {}) {
@@ -67,6 +68,7 @@ export class Game {
     this.horde = new ZombieHorde(200, 540, startZombies);
 
     this.level.init();
+    biomeManager.reset();
     this.particles.clear();
     this.floatingText.clear();
 

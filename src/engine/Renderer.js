@@ -1,4 +1,5 @@
 import { assets } from './AssetLoader.js';
+import { biomeManager } from '../systems/BiomeManager.js';
 
 export class Camera {
   constructor() {
@@ -67,76 +68,28 @@ export class Renderer {
   }
 
   drawBackground(cameraX) {
-    const worldX = cameraX;
+    // 1. Render Active Panoramic Backgrounds with Dynamic Alpha Cross-fade
+    const visibleZones = biomeManager.getRenderableZones(cameraX, this.width, assets);
 
-    // Biome Spatial Layout:
-    // 0 - 7000px (0-700m): City Sunset
-    // 7000 - 10000px (700-1000m): Mountain Tunnel Transition (Dark mountain cavern, yellow ceiling lamps)
-    // 10000 - 18000px (1000-1800m): Sunny Beach & Palms
-    // 18000 - 21500px (1800-2150m): Sea Suspension Bridge Transition (Steel towers, ocean expanse)
-    // 21500px+ (2150m+): Golden Desert & Pyramids
-
-    // 1. Render Base Scenic Backgrounds with Alpha Cross-fade (Non-repeating Continuous Panorama)
-    let cityAlpha = 0;
-    let beachAlpha = 0;
-    let desertAlpha = 0;
-
-    if (worldX < 7000) {
-      cityAlpha = 1.0;
-    } else if (worldX < 8500) {
-      cityAlpha = 1.0 - (worldX - 7000) / 1500;
-    } else {
-      cityAlpha = 0;
+    for (const vz of visibleZones) {
+      if (vz.alpha > 0.005 && vz.theme && vz.theme.img) {
+        this.ctx.save();
+        this.ctx.globalAlpha = vz.alpha;
+        this.drawPanoramicBackground(vz.theme.img, vz.progress, vz.theme.roadStyle);
+        this.ctx.restore();
+      }
     }
 
-    if (worldX >= 8500 && worldX < 10000) {
-      beachAlpha = (worldX - 8500) / 1500;
-    } else if (worldX >= 10000 && worldX < 18000) {
-      beachAlpha = 1.0;
-    } else if (worldX >= 18000 && worldX < 19500) {
-      beachAlpha = 1.0 - (worldX - 18000) / 1500;
-    } else {
-      beachAlpha = 0;
-    }
-
-    if (worldX >= 19500 && worldX < 21500) {
-      desertAlpha = (worldX - 19500) / 2000;
-    } else if (worldX >= 21500) {
-      desertAlpha = 1.0;
-    }
-
-    if (cityAlpha > 0.01) {
-      const cityProgress = Math.min(1, Math.max(0, worldX / 7000));
-      this.ctx.save();
-      this.ctx.globalAlpha = cityAlpha;
-      this.drawPanoramicBackground(assets.images.cityBg, cityProgress, 'CITY');
-      this.ctx.restore();
-    }
-
-    if (beachAlpha > 0.01) {
-      const beachProgress = Math.min(1, Math.max(0, (worldX - 10000) / 8000));
-      this.ctx.save();
-      this.ctx.globalAlpha = beachAlpha;
-      this.drawPanoramicBackground(assets.images.beachBg, beachProgress, 'BEACH');
-      this.ctx.restore();
-    }
-
-    if (desertAlpha > 0.01) {
-      const desertProgress = Math.min(1, Math.max(0, ((worldX - 21500) % 20000) / 20000));
-      this.ctx.save();
-      this.ctx.globalAlpha = desertAlpha;
-      this.drawPanoramicBackground(assets.images.desertBg, desertProgress, 'DESERT');
-      this.ctx.restore();
-    }
-
-    // 2. Mountain Tunnel Segment (7000px to 10000px)
-    if (cameraX >= 6400 && cameraX <= 10600) {
-      this.drawMountainTunnel(cameraX);
-    }
-
-    // 3. Ocean Suspension Bridge Segment (18000px to 21500px)
-    if (cameraX >= 17400 && cameraX <= 22000) {
-      this.drawSuspensionBridge(cameraX);
+    // 2. Render Active Transition Structures (Mountain Tunnel, Suspension Bridge, Grand Portal)
+    const transitions = biomeManager.getTransitions(cameraX, this.width);
+    for (const tr of transitions) {
+      if (tr.type === 'TUNNEL') {
+        this.drawMountainTunnelSegment(cameraX, tr.startX, tr.endX);
+      } else if (tr.type === 'BRIDGE') {
+        this.drawSuspensionBridgeSegment(cameraX, tr.startX, tr.endX);
+      } else {
+        this.drawGatewayPortalSegment(cameraX, tr.startX, tr.endX);
+      }
     }
   }
 
@@ -287,10 +240,7 @@ export class Renderer {
     this.ctx.restore();
   }
 
-  drawMountainTunnel(cameraX) {
-    const tStart = 7000;
-    const tEnd = 10000;
-
+  drawMountainTunnelSegment(cameraX, tStart, tEnd) {
     this.ctx.save();
 
     // 1. Mountain Rock Mass Background (Blocks out the sky completely inside the mountain!)
@@ -356,7 +306,6 @@ export class Renderer {
     // 3. Grand Mountain Entrance Portal
     const entranceRx = tStart - cameraX;
     if (entranceRx >= -400 && entranceRx <= this.width + 400) {
-      // Natural rock mountain slope
       this.ctx.fillStyle = '#222733';
       this.ctx.beginPath();
       this.ctx.moveTo(entranceRx - 400, 540);
@@ -366,7 +315,6 @@ export class Renderer {
       this.ctx.closePath();
       this.ctx.fill();
 
-      // Portal Arch Sign
       this.ctx.fillStyle = '#0f1318';
       this.ctx.fillRect(entranceRx - 30, 80, 140, 50);
       this.ctx.strokeStyle = '#f1c40f';
@@ -402,18 +350,15 @@ export class Renderer {
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = `900 18px 'Outfit', sans-serif`;
       this.ctx.textAlign = 'center';
-      this.ctx.fillText('阳光海滩', exitRx + 50, 105);
+      this.ctx.fillText('生态出口', exitRx + 50, 105);
       this.ctx.font = `700 11px 'Outfit', sans-serif`;
-      this.ctx.fillText('COASTAL BEACH', exitRx + 50, 122);
+      this.ctx.fillText('BIOME PORTAL', exitRx + 50, 122);
     }
 
     this.ctx.restore();
   }
 
-  drawSuspensionBridge(cameraX) {
-    const bStart = 18000;
-    const bEnd = 21500;
-
+  drawSuspensionBridgeSegment(cameraX, bStart, bEnd) {
     this.ctx.save();
 
     // 1. Deep Blue Ocean Underneath the Bridge
@@ -428,7 +373,6 @@ export class Renderer {
         this.ctx.fillStyle = 'rgba(41, 128, 185, 0.4)';
         this.ctx.fillRect(clampL, 420, clampR - clampL, 120);
 
-        // Ocean Wave crests under bridge
         this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
         this.ctx.lineWidth = 2;
         for (let ox = clampL; ox < clampR; ox += 60) {
@@ -444,21 +388,17 @@ export class Renderer {
       const rx = x - cameraX;
       if (rx < -400 || rx > this.width + 400) continue;
 
-      // Concrete Pier Foundation in Sea
       this.ctx.fillStyle = '#7f8c8d';
       this.ctx.fillRect(rx - 30, 440, 60, 100);
 
-      // Red Steel Tower Columns
       this.ctx.fillStyle = '#c0392b';
       this.ctx.fillRect(rx - 20, 0, 40, 540);
 
-      // Cross Bracing Trusses
       this.ctx.fillStyle = '#a93226';
       this.ctx.fillRect(rx - 55, 80, 110, 20);
       this.ctx.fillRect(rx - 55, 240, 110, 20);
       this.ctx.fillRect(rx - 55, 400, 110, 20);
 
-      // Main Suspension Catenary Cables
       this.ctx.strokeStyle = '#e74c3c';
       this.ctx.lineWidth = 8;
       this.ctx.beginPath();
@@ -466,7 +406,6 @@ export class Renderer {
       this.ctx.quadraticCurveTo(rx, 390, rx + 350, 80);
       this.ctx.stroke();
 
-      // Vertical Suspension Steel Cables
       this.ctx.strokeStyle = 'rgba(231, 76, 60, 0.65)';
       this.ctx.lineWidth = 2.5;
       for (let vx = -330; vx <= 330; vx += 30) {
@@ -478,7 +417,7 @@ export class Renderer {
       }
     }
 
-    // 3. Bridge Entrance & Desert Entrance Portals
+    // 3. Bridge Entrance Portals
     const entranceRx = bStart - cameraX;
     if (entranceRx >= -300 && entranceRx <= this.width + 300) {
       this.ctx.fillStyle = '#c0392b';
@@ -498,11 +437,32 @@ export class Renderer {
       this.ctx.fillStyle = '#ffffff';
       this.ctx.font = `900 17px 'Outfit', sans-serif`;
       this.ctx.textAlign = 'center';
-      this.ctx.fillText('沙漠绿洲', exitRx + 50, 142);
+      this.ctx.fillText('大桥出口', exitRx + 50, 142);
       this.ctx.font = `700 10px 'Outfit', sans-serif`;
-      this.ctx.fillText('DESERT OASIS', exitRx + 50, 156);
+      this.ctx.fillText('BRIDGE PORTAL', exitRx + 50, 156);
     }
 
+    this.ctx.restore();
+  }
+
+  drawGatewayPortalSegment(cameraX, pStart, pEnd) {
+    this.ctx.save();
+    const entranceRx = pStart - cameraX;
+    if (entranceRx >= -400 && entranceRx <= this.width + 400) {
+      this.ctx.fillStyle = '#1e272e';
+      this.ctx.fillRect(entranceRx - 20, 40, 160, 500);
+      this.ctx.fillRect(entranceRx + 320, 40, 160, 500);
+      this.ctx.fillStyle = '#2f3542';
+      this.ctx.fillRect(entranceRx - 30, 40, 520, 50);
+
+      this.ctx.fillStyle = '#00d2d3';
+      this.ctx.fillRect(entranceRx - 30, 85, 520, 5);
+
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = `900 20px 'Outfit', sans-serif`;
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('极速关卡过场', entranceRx + 230, 72);
+    }
     this.ctx.restore();
   }
 
