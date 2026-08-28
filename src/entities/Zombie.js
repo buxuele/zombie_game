@@ -219,6 +219,23 @@ export class Zombie {
     }
   }
 
+  drawGroundShadow(ctx, cameraX, groundY = 540) {
+    if (!this.alive || this.isFallingInPit) return;
+    const renderX = this.x - cameraX + this.width / 2;
+    const heightAboveGround = Math.max(0, groundY - (this.y + this.height));
+    const shadowFactor = Math.max(0.12, 1 - heightAboveGround / 350);
+    const shadowRadiusX = 18 * shadowFactor;
+    const shadowRadiusY = 4.5 * shadowFactor;
+    const shadowAlpha = 0.25 * shadowFactor;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.ellipse(renderX, groundY - 2, shadowRadiusX, shadowRadiusY, 0, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0, 0, 0, ${shadowAlpha.toFixed(3)})`;
+    ctx.fill();
+    ctx.restore();
+  }
+
   draw(ctx, cameraX, equippedHat = 'none', isGold = false, isNinja = false, isQuarterback = false) {
     if (!this.alive) return;
 
@@ -251,13 +268,6 @@ export class Zombie {
       }
 
       if (sprite) {
-        if (this.grounded && !this.isFallingInPit) {
-          ctx.beginPath();
-          ctx.ellipse(0, 0, 18, 4, 0, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-          ctx.fill();
-        }
-
         ctx.drawImage(sprite, -this.width / 2, -this.height, this.width, this.height);
         this.drawHat(ctx, equippedHat, 0, isQuarterback, isNinja);
         ctx.restore();
@@ -293,11 +303,6 @@ export class Zombie {
       legPhase = Math.sin(this.runTimer + this.phaseOffset);
       bodyBob = Math.abs(Math.cos(this.runTimer + this.phaseOffset)) * 4.5;
       armSwing = Math.sin(this.runTimer * 1.4 + this.phaseOffset) * 6;
-
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 16, 4, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
-      ctx.fill();
     }
 
     // Dynamic High-Stepping Legs (Left & Right legs swing vigorously)

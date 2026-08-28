@@ -262,6 +262,69 @@ function testBiomeRandomNonRepeating() {
   assert(style === bm.zones[0].roadStyle, `Road style at ${testX}px matches active zone style: ${style}`);
 }
 
+// 12. Dynamic Ground Shadow Scaling Test
+function testDynamicGroundShadowScaling() {
+  console.log('\n--- Testing Dynamic Ground Shadow Scaling ---');
+  const z = new Zombie(0, 200, 486, true); // on ground
+  const groundY = 540;
+
+  // On ground
+  const hGrounded = Math.max(0, groundY - (z.y + z.height));
+  const factorGrounded = Math.max(0.12, 1 - hGrounded / 350);
+  assert(factorGrounded === 1, `Ground shadow factor at ground is 1.0: ${factorGrounded}`);
+
+  // In air at peak y=250 (height = 236px)
+  z.y = 250;
+  const hAir = Math.max(0, groundY - (z.y + z.height));
+  const factorAir = Math.max(0.12, 1 - hAir / 350);
+  assert(factorAir < 0.5, `Ground shadow scales down in air: ${factorAir.toFixed(2)} < 0.5`);
+  assert(factorAir >= 0.12, `Ground shadow maintains minimum visibility factor: ${factorAir.toFixed(2)} >= 0.12`);
+}
+
+// 13. Camera Dynamic Zoom Breathing Test
+import { Camera } from '../src/engine/Renderer.js';
+function testCameraDynamicZoomBreathing() {
+  console.log('\n--- Testing Camera Dynamic Zoom Breathing ---');
+  const cam = new Camera();
+  assert(cam.zoom === 1.0, 'Initial camera zoom is 1.0');
+
+  // Simulate leader high jump (leaderY = 200)
+  cam.update(0.1, 500, 200);
+  assert(cam.targetZoom === 0.94, 'Camera target zoom becomes 0.94 during high jump');
+  assert(cam.zoom < 1.0, `Camera zoom smoothly interpolates outward: ${cam.zoom.toFixed(3)} < 1.0`);
+
+  // Settle back to ground (leaderY = 486)
+  for (let i = 0; i < 30; i++) {
+    cam.update(1 / 60, 500, 486);
+  }
+  assert(cam.targetZoom === 1.0, 'Camera target zoom returns to 1.0 on ground');
+  assert(cam.zoom > 0.98, `Camera zoom returns towards 1.0: ${cam.zoom.toFixed(3)} > 0.98`);
+}
+
+// 14. Particle System Visual Types Test
+import { ParticleSystem } from '../src/effects/ParticleSystem.js';
+function testParticleSystemVisualTypes() {
+  console.log('\n--- Testing Particle System Visual Types & Helpers ---');
+  const ps = new ParticleSystem(100);
+
+  ps.spawnAngelGhost(200, 400);
+  const ghost = ps.particles.find(p => p.active && p.type === 'ghost');
+  assert(ghost !== undefined, 'Angel ghost particle spawned successfully');
+  assert(ghost.vy < -50, `Ghost particle has upward floating velocity: ${ghost.vy}`);
+
+  ps.spawnCivilianPanic(300, 400);
+  const sweat = ps.particles.find(p => p.active && p.type === 'sweat');
+  assert(sweat !== undefined, 'Panic sweat droplet spawned successfully');
+
+  ps.spawnWaterFoam(400, 300);
+  const foam = ps.particles.find(p => p.active && p.type === 'foam');
+  assert(foam !== undefined, 'Tsunami water foam bubble spawned successfully');
+
+  ps.spawnCurrencyAura(500, 400, 'coin');
+  const aura = ps.particles.find(p => p.active && p.type === 'shockwave');
+  assert(aura !== undefined, 'Currency aura shockwave spawned successfully');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -274,6 +337,9 @@ testVehicleSuspensionState();
 testCivilianInfectionInheritance();
 testTrampolineAndMovingTraffic();
 testBiomeRandomNonRepeating();
+testDynamicGroundShadowScaling();
+testCameraDynamicZoomBreathing();
+testParticleSystemVisualTypes();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

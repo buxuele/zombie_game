@@ -128,26 +128,31 @@ export class TransformationManager {
       horde.zombies.forEach((z, idx) => {
         if (z.alive) {
           z.grounded = false;
-          const surfY = groundY - 125 + Math.sin(this.wavePhase * 2 + idx * 0.5) * 12;
-          z.y += (surfY - z.y) * Math.min(1, 10 * dt);
+          const surfY = groundY - 130 + Math.sin(this.wavePhase * 2.5 + idx * 0.5) * 14;
+          z.y += (surfY - z.y) * Math.min(1, 12 * dt);
           z.vy = 0;
         }
       });
-      if (particleSystem && Math.random() > 0.25) {
-        particleSystem.spawnWaterSplash(leader.x + 90, groundY);
+      if (particleSystem) {
+        if (Math.random() > 0.2) {
+          particleSystem.spawnWaterSplash(leader.x + 100, groundY);
+        }
+        if (Math.random() > 0.35) {
+          particleSystem.spawnWaterFoam(leader.x + 120, groundY - 190);
+        }
       }
     } else if (this.activeType === 'DRAGON') {
       horde.zombies.forEach((z, idx) => {
         if (z.alive) {
           z.grounded = false;
-          const waveOffset = Math.sin(this.wavePhase * 2 - idx * 0.45) * 55;
+          const waveOffset = Math.sin(this.wavePhase * 2.2 - idx * 0.5) * 55;
           const dragonTargetY = groundY - 210 + waveOffset;
           z.y += (dragonTargetY - z.y) * Math.min(1, 10 * dt);
           z.vy = 0;
         }
       });
-      if (particleSystem && Math.random() > 0.3) {
-        particleSystem.spawn(leader.x + 120, leader.y + 10, 80 + Math.random() * 60, (Math.random() - 0.5) * 40, '#f1c40f', 6, 2, 0.25, 0, 'spark');
+      if (particleSystem && Math.random() > 0.25) {
+        particleSystem.spawnDragonSparkle(leader.x + 60 + Math.random() * 80, leader.y);
       }
     } else if (this.activeType === 'BALLOON') {
       horde.zombies.forEach((z, idx) => {
@@ -160,12 +165,15 @@ export class TransformationManager {
       });
     } else if (this.activeType === 'GIANT_MECH') {
       this.laserTimer += dt;
+      if (particleSystem && Math.random() > 0.3) {
+        particleSystem.spawnMechExhaust(leader.x - 20, groundY - 195);
+      }
       if (this.laserTimer >= 0.12) {
         this.laserTimer = 0;
         audio.playLaser();
         if (camera) camera.addTrauma(0.2);
         if (particleSystem) {
-          particleSystem.spawnLaserSparks(leader.x + 800, leader.y - 20);
+          particleSystem.spawnLaserSparks(leader.x + 800, groundY - 165);
         }
       }
     } else if (this.activeType === 'NINJA') {
@@ -198,65 +206,118 @@ export class TransformationManager {
     ctx.save();
     const living = horde.zombies.filter(z => z.alive);
 
-    // 1. Dragon Serpentine Body Segments
+    // 1. Articulated Dragon Serpentine Body Segments
     for (let i = living.length - 1; i >= 0; i--) {
       const z = living[i];
       const zx = z.x - cameraX + z.width / 2;
       const zy = z.y + z.height / 2;
+      const tilt = Math.sin(this.wavePhase * 2.2 - i * 0.5) * 0.35;
 
-      ctx.fillStyle = (i % 2 === 0) ? '#c0392b' : '#f39c12';
+      ctx.save();
+      ctx.translate(zx, zy);
+      ctx.rotate(tilt);
+
+      // Dorsal Fin
+      ctx.fillStyle = '#f39c12';
       ctx.beginPath();
-      ctx.ellipse(zx, zy, 26, 20, Math.sin(this.wavePhase + i * 0.5) * 0.3, 0, Math.PI * 2);
+      ctx.moveTo(-8, -20);
+      ctx.lineTo(0, -32);
+      ctx.lineTo(8, -20);
+      ctx.closePath();
       ctx.fill();
 
-      // Golden Scales
+      // Main Segment Body (Ruby Red with Gold Rim)
+      ctx.fillStyle = (i % 2 === 0) ? '#c0392b' : '#e74c3c';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 28, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Shimmering Dragon Scales
       ctx.fillStyle = '#f1c40f';
       ctx.beginPath();
-      ctx.arc(zx, zy - 12, 6, 0, Math.PI * 2);
+      ctx.arc(0, -8, 7, 0, Math.PI);
       ctx.fill();
+
+      ctx.restore();
     }
 
     // 2. Dragon Glorious Head at Front
-    const headX = renderX + 45;
+    const headX = renderX + 50;
     const headY = leaderY + 24;
+    const jawOpen = Math.abs(Math.sin(this.wavePhase * 3)) * 8;
 
+    ctx.save();
+    ctx.translate(headX, headY);
+
+    // Head Base
     ctx.fillStyle = '#c0392b';
     ctx.beginPath();
-    ctx.arc(headX, headY, 28, 0, Math.PI * 2);
+    ctx.arc(0, 0, 30, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = '#f1c40f';
+    ctx.lineWidth = 3;
+    ctx.stroke();
 
-    // Dragon Horns
+    // Dragon Crown Horns
     ctx.fillStyle = '#f1c40f';
     ctx.beginPath();
-    ctx.moveTo(headX - 10, headY - 18);
-    ctx.lineTo(headX - 25, headY - 45);
-    ctx.lineTo(headX - 4, headY - 24);
+    ctx.moveTo(-10, -18);
+    ctx.lineTo(-26, -48);
+    ctx.lineTo(-4, -24);
     ctx.fill();
 
     ctx.beginPath();
-    ctx.moveTo(headX + 4, headY - 18);
-    ctx.lineTo(headX + 18, headY - 45);
-    ctx.lineTo(headX + 12, headY - 24);
+    ctx.moveTo(4, -18);
+    ctx.lineTo(20, -48);
+    ctx.lineTo(12, -24);
     ctx.fill();
 
-    // Glowing Eyes & Whiskers
+    // Snout and Jaws
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.roundRect(8, -12, 28, 14, 4);
+    ctx.fill();
+
+    // Lower Jaw (Animated Chomping)
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath();
+    ctx.roundRect(8, 2 + jawOpen, 26, 10, 3);
+    ctx.fill();
+
+    // Sharp White Dragon Fangs
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(headX + 10, headY - 6, 7, 0, Math.PI * 2);
+    ctx.moveTo(14, 2);
+    ctx.lineTo(18, 9);
+    ctx.lineTo(22, 2);
+    ctx.fill();
+
+    // Glowing Ruby Eyes with Yellow Catchlight
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.arc(6, -8, 8, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#e74c3c';
     ctx.beginPath();
-    ctx.arc(headX + 12, headY - 6, 3, 0, Math.PI * 2);
+    ctx.arc(8, -8, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(9, -10, 1.8, 0, Math.PI * 2);
     ctx.fill();
 
-    // Whisker curls
+    // Long Flowing Golden Whiskers
     ctx.strokeStyle = '#f1c40f';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(headX + 18, headY + 6);
-    ctx.quadraticCurveTo(headX + 45, headY + 16, headX + 35, headY + 32);
+    ctx.moveTo(24, -2);
+    ctx.quadraticCurveTo(55, 6 + Math.sin(this.wavePhase * 3) * 10, 48, 28 + Math.cos(this.wavePhase * 3) * 12);
     ctx.stroke();
 
+    ctx.restore();
     ctx.restore();
   }
 
@@ -381,34 +442,70 @@ export class TransformationManager {
     ctx.save();
     const mechX = renderX + 40;
     const mechY = groundY - 140;
+    const stepBob = Math.sin(this.wavePhase * 3) * 6;
 
+    // 1. Shoulder Dual Exhaust Smokestacks
+    ctx.fillStyle = '#1e272e';
+    ctx.fillRect(mechX - 28, mechY - 65, 10, 20);
+    ctx.fillRect(mechX + 18, mechY - 65, 10, 20);
+
+    // Exhaust Pipe Metal Lips
+    ctx.fillStyle = '#718093';
+    ctx.fillRect(mechX - 30, mechY - 68, 14, 4);
+    ctx.fillRect(mechX + 16, mechY - 68, 14, 4);
+
+    // 2. Heavy Armored Torso Chassis
     ctx.fillStyle = '#2c3e50';
     ctx.beginPath();
-    ctx.roundRect(mechX - 30, mechY - 50, 60, 90, 8);
+    ctx.roundRect(mechX - 34, mechY - 50 + stepBob, 68, 90, 8);
     ctx.fill();
-
-    ctx.fillStyle = '#e74c3c';
-    ctx.fillRect(mechX - 20, mechY - 20, 40, 20);
-
-    ctx.fillStyle = '#ff0055';
-    ctx.shadowColor = '#ff0055';
-    ctx.shadowBlur = 15;
-    ctx.beginPath();
-    ctx.arc(mechX + 18, mechY - 32, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.lineWidth = 14 + Math.sin(this.wavePhase * 2) * 4;
-    ctx.strokeStyle = 'rgba(255, 0, 85, 0.9)';
-    ctx.beginPath();
-    ctx.moveTo(mechX + 24, mechY - 32);
-    ctx.lineTo(mechX + 1100, mechY - 32);
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 3;
     ctx.stroke();
 
-    ctx.lineWidth = 5;
+    // Chest Hazard Warning Stripes
+    ctx.fillStyle = '#f1c40f';
+    ctx.fillRect(mechX - 22, mechY - 15 + stepBob, 44, 18);
+    ctx.fillStyle = '#15181e';
+    for (let i = -20; i < 20; i += 10) {
+      ctx.beginPath();
+      ctx.moveTo(mechX + i, mechY - 15 + stepBob);
+      ctx.lineTo(mechX + i + 6, mechY - 15 + stepBob);
+      ctx.lineTo(mechX + i, mechY + 3 + stepBob);
+      ctx.lineTo(mechX + i - 6, mechY + 3 + stepBob);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // 3. Pulsing Chest Laser Reactor Sphere
+    const corePulse = 10 + Math.sin(this.wavePhase * 4) * 3;
+    ctx.fillStyle = '#ff0055';
+    ctx.shadowColor = '#ff0055';
+    ctx.shadowBlur = 25;
+    ctx.beginPath();
+    ctx.arc(mechX + 22, mechY - 32 + stepBob, corePulse, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Laser Reactor Core Inner Bright Star
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(mechX + 22, mechY - 32 + stepBob, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 4. Laser Beam Blast with Core & Energy Ripples
+    ctx.lineWidth = 18 + Math.sin(this.wavePhase * 3) * 6;
+    ctx.strokeStyle = 'rgba(255, 0, 85, 0.85)';
+    ctx.beginPath();
+    ctx.moveTo(mechX + 28, mechY - 32 + stepBob);
+    ctx.lineTo(mechX + 1100, mechY - 32 + stepBob);
+    ctx.stroke();
+
+    // High-Voltage White Plasma Center Beam
+    ctx.lineWidth = 6;
     ctx.strokeStyle = '#ffffff';
     ctx.beginPath();
-    ctx.moveTo(mechX + 24, mechY - 32);
-    ctx.lineTo(mechX + 1100, mechY - 32);
+    ctx.moveTo(mechX + 28, mechY - 32 + stepBob);
+    ctx.lineTo(mechX + 1100, mechY - 32 + stepBob);
     ctx.stroke();
 
     ctx.restore();

@@ -201,7 +201,7 @@ export class Game {
 
     this.particles.update(dt, this.renderer.camera.renderX);
     this.floatingText.update(dt);
-    this.renderer.camera.update(dt, leader.x);
+    this.renderer.camera.update(dt, leader.x, leader.y);
 
     if (this.callbacks.onHudUpdate) {
       this.callbacks.onHudUpdate({
@@ -248,7 +248,7 @@ export class Game {
       }
     }
 
-    // 1. Coins (Physical touch or Magnet upgrade / Fever / UFO / Dragon)
+    // 1. Coins (Curved Magnetic Stream & Golden Aura Pop)
     for (const coin of this.level.coins) {
       if (!coin.alive) continue;
       coin.update(dt);
@@ -258,8 +258,11 @@ export class Game {
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if ((hasMagnet && dist < magnetDist) || isTsunami || isDragon || isFever || (this.transformations.activeType === 'UFO')) {
-        coin.x += (dx / dist) * 580 * dt;
-        coin.y += (dy / dist) * 580 * dt;
+        const perpX = -dy / (dist || 1);
+        const perpY = dx / (dist || 1);
+        const curve = Math.sin(coin.x * 0.05) * 80;
+        coin.x += ((dx / (dist || 1)) * 620 + perpX * curve) * dt;
+        coin.y += ((dy / (dist || 1)) * 620 + perpY * curve) * dt;
       }
 
       for (const z of this.horde.zombies) {
@@ -269,6 +272,8 @@ export class Game {
           storage.addCoins(1);
           storage.updateMission('coins_collected', 1);
 
+          this.particles.spawnCurrencyAura(coin.x, coin.y, 'coin');
+
           this.particles.spawnFlyingCurrency(coin.x, coin.y, 'coin', () => {
             if (this.callbacks.onCurrencyPunch) this.callbacks.onCurrencyPunch('coin');
           });
@@ -277,7 +282,7 @@ export class Game {
       }
     }
 
-    // 2. Brains (Physical touch or Magnet upgrade)
+    // 2. Brains (Curved Magnetic Stream & Pink Aura Pop)
     for (const brain of this.level.brains) {
       if (!brain.alive) continue;
       brain.update(dt);
@@ -287,8 +292,11 @@ export class Game {
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if ((hasMagnet && dist < magnetDist) || isTsunami || isDragon || isFever) {
-        brain.x += (dx / dist) * 540 * dt;
-        brain.y += (dy / dist) * 540 * dt;
+        const perpX = -dy / (dist || 1);
+        const perpY = dx / (dist || 1);
+        const curve = Math.sin(brain.x * 0.05) * 80;
+        brain.x += ((dx / (dist || 1)) * 580 + perpX * curve) * dt;
+        brain.y += ((dy / (dist || 1)) * 580 + perpY * curve) * dt;
       }
 
       for (const z of this.horde.zombies) {
@@ -297,6 +305,8 @@ export class Game {
           this.sessionBrains += 1;
           storage.addBrains(1);
           logger.info('高空跳跃收集到发光粉色大脑');
+
+          this.particles.spawnCurrencyAura(brain.x, brain.y, 'brain');
 
           this.particles.spawnFlyingCurrency(brain.x, brain.y, 'brain', () => {
             if (this.callbacks.onCurrencyPunch) this.callbacks.onCurrencyPunch('brain');
@@ -436,7 +446,10 @@ export class Game {
             // Under-crewed crush in slow motion
             this.timeScale = 0.35;
             this.slowMoTimer = 0.8;
-            this.horde.zombies.forEach(z => z.alive = false);
+            this.horde.zombies.forEach(z => {
+              z.alive = false;
+              this.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
+            });
             this.activePushVehicle = null;
             audio.playExplosion();
             logger.collision(`推挤失败, 军团被 ${v.config.name} 碾压覆灭!`);
@@ -500,6 +513,7 @@ export class Game {
           bomb.explode(this.particles, this.floatingText, this.renderer.camera);
           if (!isQuarterback && !isTsunami) {
             z.alive = false;
+            this.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
             logger.collision(`触碰地雷引爆! 损失僵尸, 剩余: ${this.horde.count} 人`);
           }
           break;
@@ -535,12 +549,22 @@ export class Game {
     this.renderer.clear();
     const cameraX = this.renderer.camera.renderX;
     const cameraY = this.renderer.camera.renderY;
+    const zoom = this.renderer.camera.zoom;
+    const centerX = this.renderer.width / 2;
+    const centerY = this.renderer.height * 0.65;
 
     this.renderer.ctx.save();
+    this.renderer.ctx.translate(centerX, centerY);
+    this.renderer.ctx.scale(zoom, zoom);
+    this.renderer.ctx.translate(-centerX, -centerY);
     this.renderer.ctx.translate(0, cameraY);
 
     this.renderer.drawBackground(cameraX);
     this.level.draw(this.renderer.ctx, cameraX);
+
+    // Dynamic environmental light cones
+    this.renderer.drawStreetlightCones(cameraX);
+    this.renderer.drawVehicleHeadlights(this.level.vehicles, cameraX);
 
     const isGold = this.transformations.activeType === 'GOLD';
     const isNinja = this.transformations.activeType === 'NINJA';
@@ -561,8 +585,9 @@ export class Game {
 
     this.renderer.ctx.restore();
 
-    // Screen space ambient transformation atmosphere
+    // Screen space ambient transformation atmosphere & dynamic speed lines
     this.renderer.drawAmbientTransformationAtmosphere(this.transformations.activeType);
+    this.renderer.drawSpeedLines(this.gameSpeed, this.feverTimer > 0, this.transformations.isActive);
   }
 
   gameOver() {

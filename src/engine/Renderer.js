@@ -9,15 +9,22 @@ export class Camera {
     this.trauma = 0;
     this.shakeX = 0;
     this.shakeY = 0;
+    this.zoom = 1.0;
+    this.targetZoom = 1.0;
   }
 
   addTrauma(amount) {
     this.trauma = Math.min(1.0, this.trauma + amount);
   }
 
-  update(dt, targetX) {
+  update(dt, targetX, leaderY = 486) {
     this.targetX = targetX - 220;
     this.x += (this.targetX - this.x) * Math.min(1, 10 * dt);
+
+    // Dynamic Zoom Breathing: slightly zoom out during high aerial jumps
+    const heightAboveGround = Math.max(0, 540 - 54 - leaderY);
+    this.targetZoom = heightAboveGround > 70 ? 0.94 : 1.0;
+    this.zoom += (this.targetZoom - this.zoom) * Math.min(1, 4.5 * dt);
 
     if (this.trauma > 0) {
       this.trauma = Math.max(0, this.trauma - dt * 1.5);
@@ -526,5 +533,98 @@ export class Renderer {
         }
       }
     }
+  }
+
+  drawVehicleHeadlights(vehicles, cameraX) {
+    if (!vehicles) return;
+    this.ctx.save();
+    for (const v of vehicles) {
+      if (!v.alive || v.isFlipped) continue;
+      const rx = v.x - cameraX;
+      if (rx < -300 || rx > this.width + 300) continue;
+
+      // Moving traffic casts light towards left; stationary traffic casts light towards right
+      const isMovingLeft = v.isMoving;
+      const lightOriginX = isMovingLeft ? rx : rx + v.width;
+      const lightOriginY = v.y + v.height * 0.72;
+      const beamDir = isMovingLeft ? -1 : 1;
+      const beamLength = isMovingLeft ? 260 : 200;
+
+      const grad = this.ctx.createRadialGradient(
+        lightOriginX, lightOriginY, 5,
+        lightOriginX + beamDir * beamLength * 0.6, lightOriginY + 15, beamLength
+      );
+      grad.addColorStop(0, 'rgba(254, 240, 138, 0.32)');
+      grad.addColorStop(0.3, 'rgba(253, 224, 71, 0.15)');
+      grad.addColorStop(1, 'rgba(253, 224, 71, 0)');
+
+      this.ctx.fillStyle = grad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(lightOriginX, lightOriginY - 8);
+      this.ctx.lineTo(lightOriginX + beamDir * beamLength, lightOriginY - 35);
+      this.ctx.lineTo(lightOriginX + beamDir * beamLength, lightOriginY + 45);
+      this.ctx.lineTo(lightOriginX, lightOriginY + 12);
+      this.ctx.closePath();
+      this.ctx.fill();
+    }
+    this.ctx.restore();
+  }
+
+  drawStreetlightCones(cameraX) {
+    this.ctx.save();
+    const lampSpacing = 680;
+    const startIdx = Math.floor((cameraX - 200) / lampSpacing);
+    const endIdx = Math.ceil((cameraX + this.width + 200) / lampSpacing);
+
+    for (let i = startIdx; i <= endIdx; i++) {
+      const lampX = i * lampSpacing - cameraX;
+      const lampTopY = 320;
+      const roadY = 540;
+
+      // Volumetric soft warm down-cone
+      const coneGrad = this.ctx.createLinearGradient(lampX, lampTopY, lampX, roadY);
+      coneGrad.addColorStop(0, 'rgba(253, 224, 71, 0.14)');
+      coneGrad.addColorStop(0.7, 'rgba(254, 240, 138, 0.08)');
+      coneGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
+
+      this.ctx.fillStyle = coneGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(lampX, lampTopY);
+      this.ctx.lineTo(lampX - 110, roadY);
+      this.ctx.lineTo(lampX + 110, roadY);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Streetlamp bulb glow
+      this.ctx.fillStyle = '#fef08a';
+      this.ctx.beginPath();
+      this.ctx.arc(lampX, lampTopY, 4, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+    this.ctx.restore();
+  }
+
+  drawSpeedLines(gameSpeed, isFever = false, isTransform = false) {
+    if (gameSpeed < 230 && !isFever && !isTransform) return;
+
+    this.ctx.save();
+    const intensity = isFever || isTransform ? 1.0 : Math.min(1.0, (gameSpeed - 230) / 120);
+    const lineCount = Math.floor(12 * intensity);
+    const time = performance.now() * 0.003;
+
+    this.ctx.lineWidth = 2.5;
+    for (let i = 0; i < lineCount; i++) {
+      const y = ((i * 59 + time * 400) % (this.height - 180)) + 60;
+      const length = 120 + Math.sin(i * 13 + time) * 80;
+      const x = (this.width + 100) - ((time * 800 + i * 210) % (this.width + 300));
+      const alpha = (0.15 + Math.sin(i * 7 + time) * 0.1) * intensity;
+
+      this.ctx.strokeStyle = isFever ? `rgba(241, 196, 15, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y);
+      this.ctx.lineTo(x + length, y);
+      this.ctx.stroke();
+    }
+    this.ctx.restore();
   }
 }

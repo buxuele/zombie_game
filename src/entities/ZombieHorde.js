@@ -168,6 +168,12 @@ export class ZombieHorde {
   }
 
   draw(ctx, cameraX, equippedHat = 'none', isGold = false, isNinja = false, isQuarterback = false) {
+    // 1. Dynamic ground shadows pass (rendered directly on ground plane)
+    for (const z of this.zombies) {
+      z.drawGroundShadow(ctx, cameraX, this.groundY);
+    }
+
+    // 2. Y-sorted zombie bodies pass
     const sorted = [...this.zombies].sort((a, b) => (a.y + a.layerDepth) - (b.y + b.layerDepth));
     for (const z of sorted) {
       z.draw(ctx, cameraX, equippedHat, isGold, isNinja, isQuarterback);

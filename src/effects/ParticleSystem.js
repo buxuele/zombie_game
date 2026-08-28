@@ -119,6 +119,72 @@ class Particle {
       ctx.lineWidth = 4;
       ctx.strokeStyle = this.color;
       ctx.stroke();
+    } else if (this.type === 'ghost') {
+      // Chibi Angel Zombie Ghost with Golden Halo and Wings
+      const sway = Math.sin((1 - progress) * 8) * 12;
+      ctx.translate(sway, 0);
+
+      // Golden Halo
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.ellipse(0, -currentSize * 1.4, currentSize * 0.7, currentSize * 0.28, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Translucent Cute White Body
+      ctx.fillStyle = 'rgba(236, 240, 241, 0.85)';
+      ctx.beginPath();
+      ctx.arc(0, -currentSize * 0.4, currentSize * 0.8, Math.PI, 0);
+      ctx.lineTo(currentSize * 0.8, currentSize * 0.8);
+      ctx.quadraticCurveTo(currentSize * 0.4, currentSize * 0.4, 0, currentSize * 0.8);
+      ctx.quadraticCurveTo(-currentSize * 0.4, currentSize * 0.4, -currentSize * 0.8, currentSize * 0.8);
+      ctx.closePath();
+      ctx.fill();
+
+      // Cute Derpy Black Ghost Eyes
+      ctx.fillStyle = '#2c3e50';
+      ctx.beginPath();
+      ctx.arc(-currentSize * 0.28, -currentSize * 0.45, currentSize * 0.16, 0, Math.PI * 2);
+      ctx.arc(currentSize * 0.28, -currentSize * 0.45, currentSize * 0.16, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Tiny Wings
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.beginPath();
+      ctx.ellipse(-currentSize * 0.9, -currentSize * 0.2, currentSize * 0.4, currentSize * 0.2, -0.3, 0, Math.PI * 2);
+      ctx.ellipse(currentSize * 0.9, -currentSize * 0.2, currentSize * 0.4, currentSize * 0.2, 0.3, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (this.type === 'sweat') {
+      // Panic Sweat Droplet
+      ctx.fillStyle = '#3498db';
+      ctx.beginPath();
+      ctx.moveTo(0, -currentSize * 1.2);
+      ctx.quadraticCurveTo(currentSize * 0.7, currentSize * 0.4, 0, currentSize * 0.8);
+      ctx.quadraticCurveTo(-currentSize * 0.7, currentSize * 0.4, 0, -currentSize * 1.2);
+      ctx.fill();
+    } else if (this.type === 'foam') {
+      // Tsunami Crest Foam Bubble
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.beginPath();
+      ctx.arc(0, 0, currentSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(174, 214, 241, 0.9)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    } else if (this.type === 'dragonSparkle') {
+      // Four-point shimmering golden star
+      ctx.fillStyle = '#f1c40f';
+      ctx.beginPath();
+      ctx.moveTo(0, -currentSize * 1.8);
+      ctx.lineTo(currentSize * 0.4, -currentSize * 0.4);
+      ctx.lineTo(currentSize * 1.8, 0);
+      ctx.lineTo(currentSize * 0.4, currentSize * 0.4);
+      ctx.lineTo(0, currentSize * 1.8);
+      ctx.lineTo(-currentSize * 0.4, currentSize * 0.4);
+      ctx.lineTo(-currentSize * 1.8, 0);
+      ctx.lineTo(-currentSize * 0.4, -currentSize * 0.4);
+      ctx.closePath();
+      ctx.fill();
     }
 
     ctx.restore();
@@ -319,6 +385,67 @@ export class ParticleSystem {
       const vx = (Math.random() - 0.5) * 260;
       const vy = (Math.random() - 0.5) * 260;
       this.spawn(x, y, vx, vy, '#ff0055', 6, 1, 0.18, 0, 'spark');
+    }
+  }
+
+  spawnAngelGhost(x, y) {
+    this.spawn(x, y - 10, (Math.random() - 0.5) * 20, -75 - Math.random() * 25, '#ffffff', 20, 26, 1.8, -15, 'ghost');
+  }
+
+  spawnCivilianPanic(x, y) {
+    // Sweat drops flying left and right
+    for (let i = 0; i < 4; i++) {
+      const vx = (Math.random() > 0.5 ? 1 : -1) * (60 + Math.random() * 80);
+      const vy = -80 - Math.random() * 60;
+      this.spawn(x + (Math.random() - 0.5) * 16, y - 30, vx, vy, '#3498db', 5, 2, 0.45, 380, 'sweat');
+    }
+  }
+
+  spawnTransformationSmoke(x, y) {
+    // Fluffy comic smoke puff on transformation / infection
+    for (let i = 0; i < 16; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 40 + Math.random() * 100;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed - 20;
+      const color = Math.random() > 0.4 ? '#ffffff' : '#2ecc71';
+      this.spawn(x, y - 20, vx, vy, color, 8, 24, 0.4 + Math.random() * 0.25, -20, 'smoke');
+    }
+  }
+
+  spawnWaterFoam(x, y) {
+    for (let i = 0; i < 6; i++) {
+      const vx = (Math.random() - 0.5) * 120;
+      const vy = -40 - Math.random() * 80;
+      this.spawn(x + (Math.random() - 0.5) * 40, y, vx, vy, '#ffffff', 6, 14, 0.35 + Math.random() * 0.2, 50, 'foam');
+    }
+  }
+
+  spawnDragonSparkle(x, y) {
+    for (let i = 0; i < 3; i++) {
+      const vx = -80 - Math.random() * 60;
+      const vy = (Math.random() - 0.5) * 60;
+      this.spawn(x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 20, vx, vy, '#f1c40f', 6, 1, 0.4 + Math.random() * 0.3, 0, 'dragonSparkle');
+    }
+  }
+
+  spawnMechExhaust(x, y) {
+    // Dark diesel smoke puff with ember
+    this.spawn(x, y, -100 - Math.random() * 50, -40 + (Math.random() - 0.5) * 30, '#2c3e50', 8, 22, 0.45, -30, 'smoke');
+    if (Math.random() > 0.5) {
+      this.spawn(x, y, -80, -20, '#e67e22', 4, 1, 0.25, 100, 'spark');
+    }
+  }
+
+  spawnCurrencyAura(x, y, type = 'coin') {
+    const color = type === 'coin' ? '#f1c40f' : '#ff4081';
+    this.spawn(x, y, 0, 0, color, 6, 90, 0.32, 0, 'shockwave');
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const speed = 70 + Math.random() * 60;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      this.spawn(x, y, vx, vy, color, 4, 1, 0.3, 0, type === 'coin' ? 'dragonSparkle' : 'spark');
     }
   }
 
