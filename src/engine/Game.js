@@ -234,36 +234,10 @@ export class Game {
     const isBalloon = this.transformations.activeType === 'BALLOON';
     const isFever = this.feverTimer > 0;
 
-    // 0. Trampolines High Bounce
-    for (const tr of this.level.trampolines) {
-      for (const z of this.horde.zombies) {
-        if (z.alive && this.checkAABB(z, tr)) {
-          tr.bounce();
-          z.jump(680);
-          audio.playTrampoline();
-          this.particles.spawnShockwave(tr.x + tr.width / 2, tr.y, '#e74c3c');
-          this.floatingText.spawn(tr.x + tr.width / 2, tr.y - 30, 'SUPER BOING!', '#f1c40f', 24);
-          break;
-        }
-      }
-    }
-
-    // 1. Coins (Curved Magnetic Stream & Golden Aura Pop)
+    // 1. Coins (Physical Touch Collision Required)
     for (const coin of this.level.coins) {
       if (!coin.alive) continue;
       coin.update(dt);
-
-      const dx = (leader.x + 20) - (coin.x + 14);
-      const dy = (leader.y + 24) - (coin.y + 14);
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if ((hasMagnet && dist < magnetDist) || isTsunami || isDragon || isFever || (this.transformations.activeType === 'UFO')) {
-        const perpX = -dy / (dist || 1);
-        const perpY = dx / (dist || 1);
-        const curve = Math.sin(coin.x * 0.05) * 80;
-        coin.x += ((dx / (dist || 1)) * 620 + perpX * curve) * dt;
-        coin.y += ((dy / (dist || 1)) * 620 + perpY * curve) * dt;
-      }
 
       for (const z of this.horde.zombies) {
         if (z.alive && this.checkAABB(z, coin)) {
@@ -282,29 +256,17 @@ export class Game {
       }
     }
 
-    // 2. Brains (Curved Magnetic Stream & Pink Aura Pop)
+    // 2. Brains (Physical Touch Collision Required)
     for (const brain of this.level.brains) {
       if (!brain.alive) continue;
       brain.update(dt);
-
-      const dx = (leader.x + 20) - (brain.x + 17);
-      const dy = (leader.y + 24) - (brain.y + 17);
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if ((hasMagnet && dist < magnetDist) || isTsunami || isDragon || isFever) {
-        const perpX = -dy / (dist || 1);
-        const perpY = dx / (dist || 1);
-        const curve = Math.sin(brain.x * 0.05) * 80;
-        brain.x += ((dx / (dist || 1)) * 580 + perpX * curve) * dt;
-        brain.y += ((dy / (dist || 1)) * 580 + perpY * curve) * dt;
-      }
 
       for (const z of this.horde.zombies) {
         if (z.alive && this.checkAABB(z, brain)) {
           brain.collect(this.particles, this.floatingText);
           this.sessionBrains += 1;
           storage.addBrains(1);
-          logger.info('高空跳跃收集到发光粉色大脑');
+          logger.info('高空跳跃物理触碰收集到粉色大脑');
 
           this.particles.spawnCurrencyAura(brain.x, brain.y, 'brain');
 
@@ -549,14 +511,8 @@ export class Game {
     this.renderer.clear();
     const cameraX = this.renderer.camera.renderX;
     const cameraY = this.renderer.camera.renderY;
-    const zoom = this.renderer.camera.zoom;
-    const centerX = this.renderer.width / 2;
-    const centerY = this.renderer.height * 0.65;
 
     this.renderer.ctx.save();
-    this.renderer.ctx.translate(centerX, centerY);
-    this.renderer.ctx.scale(zoom, zoom);
-    this.renderer.ctx.translate(-centerX, -centerY);
     this.renderer.ctx.translate(0, cameraY);
 
     this.renderer.drawBackground(cameraX);
@@ -585,9 +541,8 @@ export class Game {
 
     this.renderer.ctx.restore();
 
-    // Screen space ambient transformation atmosphere & dynamic speed lines
+    // Screen space ambient transformation atmosphere
     this.renderer.drawAmbientTransformationAtmosphere(this.transformations.activeType);
-    this.renderer.drawSpeedLines(this.gameSpeed, this.feverTimer > 0, this.transformations.isActive);
   }
 
   gameOver() {

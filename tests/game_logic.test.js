@@ -206,9 +206,9 @@ function testCivilianInfectionInheritance() {
   assert(newZ.accessory === 'hardhat', 'New zombie inherited hardhat accessory');
 }
 
-// 10. Dynamic Moving Traffic & Trampoline Launch Test
-function testTrampolineAndMovingTraffic() {
-  console.log('\n--- Testing Trampoline & Moving Traffic ---');
+// 10. Dynamic Moving Traffic Test
+function testDynamicMovingTrafficPhysics() {
+  console.log('\n--- Testing Dynamic Moving Traffic Physics ---');
   const movingCar = new Vehicle(1000, 540, 'CAR', true);
   assert(movingCar.isMoving === true, 'Vehicle initialized as moving');
   assert(movingCar.moveSpeed === 160, 'Moving vehicle has forward velocity 160px/s');
@@ -216,10 +216,6 @@ function testTrampolineAndMovingTraffic() {
   const dt = 0.5;
   movingCar.update(dt, null, null);
   assert(movingCar.x === 1000 - 160 * 0.5, `Vehicle moves towards player: ${movingCar.x} === 920`);
-
-  const z = new Zombie(0, 200, 486, true);
-  z.jump(680); // Trampoline super jump impulse
-  assert(z.vy === -680, 'Trampoline launches zombie skyward with -680 vy');
 }
 
 // 11. Biome Random Switch & Non-Repeating Previous Zone Test
@@ -262,6 +258,35 @@ function testBiomeRandomNonRepeating() {
   assert(style === bm.zones[0].roadStyle, `Road style at ${testX}px matches active zone style: ${style}`);
 }
 
+// 12. Biome Smoothstep Alpha Crossfade Invariant Test
+function testBiomeSmoothAlphaCrossfade() {
+  console.log('\n--- Testing Biome Smoothstep Alpha Crossfade Invariant ---');
+  const bm = new BiomeManager();
+  const mockAssets = {
+    backgrounds: [
+      { id: 'city', name: '大都会夜景', roadStyle: 'CITY' },
+      { id: 'beach', name: '热带海岸', roadStyle: 'BEACH' }
+    ]
+  };
+  bm.ensureDistance(20000, mockAssets);
+
+  const z0 = bm.zones[0];
+  const z1 = bm.zones[1];
+
+  // Test midpoint of transition
+  const midTransitionX = z0.mainEndX + z0.transitionLength * 0.5;
+  const renderables = bm.getRenderableZones(midTransitionX, 1280, mockAssets);
+  assert(renderables.length >= 2, `Both overlapping zones render during transition: ${renderables.length} zones`);
+
+  const r0 = renderables.find(r => r.zone.index === 0);
+  const r1 = renderables.find(r => r.zone.index === 1);
+
+  assert(r0 !== undefined && r1 !== undefined, 'Both zone 0 and zone 1 are active in renderables');
+  assert(Math.abs(r0.alpha - 0.5) < 0.01, `Zone 0 alpha at midpoint is 0.5: ${r0.alpha.toFixed(3)}`);
+  assert(Math.abs(r1.alpha - 0.5) < 0.01, `Zone 1 alpha at midpoint is 0.5: ${r1.alpha.toFixed(3)}`);
+  assert(Math.abs((r0.alpha + r1.alpha) - 1.0) < 0.001, `Alpha sum strictly equals 1.0 (no void/black flash): ${(r0.alpha + r1.alpha).toFixed(3)} === 1.0`);
+}
+
 // 12. Dynamic Ground Shadow Scaling Test
 function testDynamicGroundShadowScaling() {
   console.log('\n--- Testing Dynamic Ground Shadow Scaling ---');
@@ -281,24 +306,20 @@ function testDynamicGroundShadowScaling() {
   assert(factorAir >= 0.12, `Ground shadow maintains minimum visibility factor: ${factorAir.toFixed(2)} >= 0.12`);
 }
 
-// 13. Camera Dynamic Zoom Breathing Test
+// 13. Fixed Camera Stability Test
 import { Camera } from '../src/engine/Renderer.js';
-function testCameraDynamicZoomBreathing() {
-  console.log('\n--- Testing Camera Dynamic Zoom Breathing ---');
+function testFixedCameraStability() {
+  console.log('\n--- Testing Fixed Camera Stability (No Zoom Distortion) ---');
   const cam = new Camera();
-  assert(cam.zoom === 1.0, 'Initial camera zoom is 1.0');
+  assert(cam.zoom === 1.0, 'Camera zoom initialized at 1.0');
 
-  // Simulate leader high jump (leaderY = 200)
-  cam.update(0.1, 500, 200);
-  assert(cam.targetZoom === 0.94, 'Camera target zoom becomes 0.94 during high jump');
-  assert(cam.zoom < 1.0, `Camera zoom smoothly interpolates outward: ${cam.zoom.toFixed(3)} < 1.0`);
+  // Jump high
+  cam.update(0.1, 500, 150);
+  assert(cam.zoom === 1.0, 'Camera zoom remains 1.0 during high jumps (no zoom distortion)');
 
-  // Settle back to ground (leaderY = 486)
-  for (let i = 0; i < 30; i++) {
-    cam.update(1 / 60, 500, 486);
-  }
-  assert(cam.targetZoom === 1.0, 'Camera target zoom returns to 1.0 on ground');
-  assert(cam.zoom > 0.98, `Camera zoom returns towards 1.0: ${cam.zoom.toFixed(3)} > 0.98`);
+  // Run fast
+  cam.update(0.5, 1200, 486);
+  assert(cam.zoom === 1.0, 'Camera zoom remains 1.0 during fast running');
 }
 
 // 14. Particle System Visual Types Test
@@ -335,10 +356,11 @@ testGroundedHordeWaveFormation();
 testSecondaryHatSpringPhysics();
 testVehicleSuspensionState();
 testCivilianInfectionInheritance();
-testTrampolineAndMovingTraffic();
+testDynamicMovingTrafficPhysics();
 testBiomeRandomNonRepeating();
+testBiomeSmoothAlphaCrossfade();
 testDynamicGroundShadowScaling();
-testCameraDynamicZoomBreathing();
+testFixedCameraStability();
 testParticleSystemVisualTypes();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);

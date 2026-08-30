@@ -1,12 +1,22 @@
 import { logger } from './Logger.js';
 import { assets as globalAssets } from '../engine/AssetLoader.js';
 
+export const THEME_SKY_GRADIENTS = {
+  CITY: ['#0f172a', '#1e1b4b', '#3b0764', '#1e1b4b'],
+  BEACH: ['#0284c7', '#38bdf8', '#7dd3fc', '#bae6fd'],
+  DESERT: ['#451a03', '#7c2d12', '#c2410c', '#ea580c'],
+  SUNSET: ['#1e1b4b', '#4c0519', '#831843', '#f97316'],
+  CYBER: ['#050814', '#0d1326', '#1a2238', '#0b0f19'],
+  SCI_FI: ['#0a192f', '#0f2b48', '#173a5e', '#0b1d30'],
+  FOREST: ['#061a14', '#0c2e24', '#134e3f', '#0a231b']
+};
+
 export class BiomeManager {
   constructor() {
     this.zones = [];
-    this.zoneLengthMin = 6000;
-    this.zoneLengthMax = 7500;
-    this.transitionLength = 1500;
+    this.zoneLengthMin = 6500;
+    this.zoneLengthMax = 8000;
+    this.transitionLength = 2200; // Smooth 2200px crossfade
     this.lastThemeId = null;
     this.generatedDistance = 0;
   }
@@ -23,7 +33,6 @@ export class BiomeManager {
     if (ast && ast.backgrounds && ast.backgrounds.length > 0) {
       return ast.backgrounds;
     }
-    // Fallback theme list
     return [
       { id: 'city', name: '大都会夜景', roadStyle: 'CITY', img: ast?.images?.cityBg },
       { id: 'beach', name: '热带海岸', roadStyle: 'BEACH', img: ast?.images?.beachBg },
@@ -41,112 +50,112 @@ export class BiomeManager {
     if (!availableThemes || availableThemes.length === 0) return;
 
     while (this.generatedDistance < targetDistance + 12000) {
-      // Pick next theme: Strictly cannot pick the one that was just passed!
       const candidates = availableThemes.filter(t => t.id !== this.lastThemeId);
       const chosenTheme = candidates.length > 0
         ? candidates[Math.floor(Math.random() * candidates.length)]
         : availableThemes[0];
 
-      const startX = this.generatedDistance;
+      const isFirst = this.zones.length === 0;
       const zoneLen = this.zoneLengthMin + Math.floor(Math.random() * (this.zoneLengthMax - this.zoneLengthMin));
-      const mainEndX = startX + zoneLen;
-      const transEndX = mainEndX + this.transitionLength;
 
-      // Choose transition structure (Mountain Tunnel, Suspension Sea Bridge, or Gateway Portal)
-      const transTypes = ['TUNNEL', 'BRIDGE', 'PORTAL'];
-      const transType = transTypes[this.zones.length % transTypes.length];
+      let startX, mainStartX, mainEndX, endX;
+
+      if (isFirst) {
+        startX = 0;
+        mainStartX = 0;
+        mainEndX = zoneLen;
+        endX = mainEndX + this.transitionLength;
+        this.generatedDistance = mainEndX;
+      } else {
+        const prev = this.zones[this.zones.length - 1];
+        startX = prev.mainEndX;
+        mainStartX = startX + this.transitionLength;
+        mainEndX = mainStartX + zoneLen;
+        endX = mainEndX + this.transitionLength;
+        this.generatedDistance = mainEndX;
+      }
 
       const zone = {
         index: this.zones.length,
         theme: chosenTheme,
         startX,
+        mainStartX,
         mainEndX,
-        transStartX: mainEndX,
-        transEndX,
-        totalEndX: transEndX,
-        transType,
-        roadStyle: chosenTheme.roadStyle || 'CITY'
+        endX,
+        transitionLength: this.transitionLength,
+        roadStyle: chosenTheme.roadStyle || 'CITY',
+        skyGradient: THEME_SKY_GRADIENTS[chosenTheme.roadStyle] || THEME_SKY_GRADIENTS.CITY
       };
 
       this.zones.push(zone);
       this.lastThemeId = chosenTheme.id;
-      this.generatedDistance = transEndX;
 
-      logger.system(`生成新生态区域 #${zone.index + 1}: ${chosenTheme.name} (${Math.floor(startX / 10)}m - ${Math.floor(transEndX / 10)}m), 过渡: ${transType}`);
+      logger.system(`生成新生态区域 #${zone.index + 1}: ${chosenTheme.name} (${Math.floor(startX / 10)}m - ${Math.floor(endX / 10)}m)`);
     }
   }
 
   cleanup(minX) {
-    this.zones = this.zones.filter(z => z.totalEndX >= minX);
+    this.zones = this.zones.filter(z => z.endX >= minX);
   }
 
   getRenderableZones(cameraX, viewportWidth, assets) {
     this.ensureDistance(cameraX + viewportWidth + 5000, assets);
-    const viewLeft = cameraX;
-    const viewRight = cameraX + viewportWidth;
 
     const visibleZones = [];
 
     for (let i = 0; i < this.zones.length; i++) {
       const z = this.zones[i];
-      if (z.totalEndX < viewLeft || z.startX > viewRight) continue;
+      if (cameraX > z.endX || cameraX + viewportWidth < z.startX) continue;
 
       let alpha = 1.0;
-      const progress = Math.max(0, Math.min(1, (cameraX - z.startX) / (z.totalEndX - z.startX)));
 
-      // If camera is in transition zone out of z
-      if (cameraX >= z.transStartX && cameraX < z.transEndX) {
-        alpha = Math.max(0, 1.0 - (cameraX - z.transStartX) / (z.transEndX - z.transStartX));
-      } else if (cameraX < z.startX) {
-        // Next zone fading in
-        const prevZone = this.zones[i - 1];
-        if (prevZone && cameraX >= prevZone.transStartX) {
-          alpha = Math.min(1, (cameraX - prevZone.transStartX) / (prevZone.transEndX - prevZone.transStartX));
-        }
+      // 1. Fade-in during entry transition
+      if (z.index > 0 && cameraX < z.mainStartX) {
+        const t = Math.max(0, Math.min(1, (cameraX - z.startX) / z.transitionLength));
+        // Cubic Hermite smoothstep for silky smooth crossfade
+        alpha = t * t * (3 - 2 * t);
+      }
+      // 2. Fade-out during exit transition
+      else if (cameraX >= z.mainEndX) {
+        const t = Math.max(0, Math.min(1, (cameraX - z.mainEndX) / z.transitionLength));
+        alpha = 1.0 - (t * t * (3 - 2 * t));
       }
 
-      visibleZones.push({
-        zone: z,
-        alpha,
-        progress,
-        theme: z.theme
-      });
+      const totalSpan = Math.max(1, z.endX - z.startX);
+      const progress = Math.max(0, Math.min(1, (cameraX - z.startX) / totalSpan));
+
+      if (alpha > 0.001) {
+        visibleZones.push({
+          zone: z,
+          alpha,
+          progress,
+          theme: z.theme,
+          skyGradient: z.skyGradient
+        });
+      }
     }
 
     return visibleZones;
   }
 
   getRoadStyleAt(worldX) {
-    for (const z of this.zones) {
-      if (worldX >= z.startX && worldX < z.totalEndX) {
-        // If in transition tunnel / bridge
-        if (worldX >= z.transStartX) {
-          if (z.transType === 'TUNNEL') return 'TUNNEL';
-          if (z.transType === 'BRIDGE') return 'BRIDGE';
+    for (let i = 0; i < this.zones.length; i++) {
+      const z = this.zones[i];
+      const nextZone = this.zones[i + 1];
+
+      if (worldX >= z.startX) {
+        if (nextZone) {
+          // Switch road style at the exact midpoint of transition
+          const switchX = z.mainEndX + z.transitionLength * 0.5;
+          if (worldX < switchX) {
+            return z.roadStyle;
+          }
+        } else {
+          return z.roadStyle;
         }
-        return z.roadStyle;
       }
     }
     return 'CITY';
-  }
-
-  getTransitions(cameraX, viewportWidth) {
-    const activeTransitions = [];
-    const minX = cameraX - 400;
-    const maxX = cameraX + viewportWidth + 400;
-
-    for (const z of this.zones) {
-      if (z.transEndX >= minX && z.transStartX <= maxX) {
-        activeTransitions.push({
-          type: z.transType,
-          startX: z.transStartX,
-          endX: z.transEndX,
-          fromTheme: z.theme,
-          nextZoneIndex: z.index + 1
-        });
-      }
-    }
-    return activeTransitions;
   }
 }
 

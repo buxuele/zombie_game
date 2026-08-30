@@ -75,6 +75,12 @@ export class AssetLoader {
         this.sprites.zombieLand = this.extractSprite(zombiesCanvas, zw * 0.64, zh * 0.68, zw * 0.33, zh * 0.29);
       }
 
+      // Load Majestic Chinese Loong Dragon Head Asset
+      const dragonImg = await this.loadFirstAvailable(['/images/dragon_head.jpg', '/images/dragon_head.png']);
+      if (dragonImg) {
+        this.sprites.dragonHead = this.removeDarkBackground(dragonImg);
+      }
+
       this.isLoaded = true;
       logger.system('全套多场景背景（街区/海滩/沙漠）与贴图就绪');
     } catch (e) {
@@ -126,6 +132,32 @@ export class AssetLoader {
         const avg = (r + g + b) / 3;
         const alphaFactor = (255 - avg) / 40;
         data[i + 3] = Math.floor(data[i + 3] * Math.min(1, Math.max(0, alphaFactor)));
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+  }
+
+  removeDarkBackground(img) {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const maxVal = Math.max(r, g, b);
+      if (maxVal < 18) {
+        data[i + 3] = 0;
+      } else if (maxVal < 45) {
+        data[i + 3] = Math.floor(data[i + 3] * ((maxVal - 18) / 27));
       }
     }
 

@@ -36,55 +36,6 @@ export class WarningBarrier {
   }
 }
 
-export class Trampoline {
-  constructor(x, groundY) {
-    this.x = x;
-    this.y = groundY - 16;
-    this.groundY = groundY;
-    this.width = 54;
-    this.height = 16;
-    this.springCompress = 0;
-  }
-
-  bounce() {
-    this.springCompress = 8;
-  }
-
-  update(dt) {
-    if (this.springCompress > 0) {
-      this.springCompress = Math.max(0, this.springCompress - dt * 25);
-    }
-  }
-
-  draw(ctx, cameraX) {
-    const rx = this.x - cameraX;
-    ctx.save();
-    ctx.translate(rx, this.y + this.springCompress);
-
-    // Diagonal Spring Legs
-    ctx.strokeStyle = '#7f8c8d';
-    ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    ctx.moveTo(4, 16 - this.springCompress);
-    ctx.lineTo(10, 2);
-    ctx.lineTo(this.width - 10, 2);
-    ctx.lineTo(this.width - 4, 16 - this.springCompress);
-    ctx.stroke();
-
-    // Red Elastic Bed
-    ctx.fillStyle = '#e74c3c';
-    ctx.beginPath();
-    ctx.roundRect(4, 0, this.width - 8, 5, 2);
-    ctx.fill();
-
-    // Golden Tension Stripe
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(12, 1.5, this.width - 24, 2);
-
-    ctx.restore();
-  }
-}
-
 export class LevelGenerator {
   constructor(groundY = 540) {
     this.groundY = groundY;
@@ -98,7 +49,6 @@ export class LevelGenerator {
     this.puddles = [];
     this.manholes = [];
     this.barriers = [];
-    this.trampolines = [];
 
     this.generatedDistance = 0;
     this.init();
@@ -115,7 +65,6 @@ export class LevelGenerator {
     this.bombs = [];
     this.mysteryBoxes = [];
     this.barriers = [];
-    this.trampolines = [];
     this.puddles = [
       { x: 900, width: 80 },
       { x: 2200, width: 110 }
@@ -142,8 +91,7 @@ export class LevelGenerator {
     this.mysteryBoxes.push(new MysteryBox(1300, this.groundY - 80));
     this.vehicles.push(new Vehicle(1650, this.groundY, 'CAR'));
 
-    this.trampolines.push(new Trampoline(1850, this.groundY));
-    this.brains.push(new BrainCollectible(1950, this.groundY - 140));
+    this.brains.push(new BrainCollectible(1900, this.groundY - 80));
 
     for (let i = 0; i < 8; i++) {
       const arc = Math.sin((i / 7) * Math.PI) * 45;
@@ -172,10 +120,6 @@ export class LevelGenerator {
 
     for (const civ of this.civilians) {
       civ.update(dt, particleSystem);
-    }
-
-    for (const tr of this.trampolines) {
-      tr.update(dt);
     }
   }
 
@@ -225,7 +169,7 @@ export class LevelGenerator {
           this.civilians.push(new Civilian(cursorX + i * 42, this.groundY));
         }
         cursorX += groupSize * 42 + 180;
-      } else if (roll < 0.52) {
+      } else if (roll < 0.55) {
         const vehicleRoll = Math.random();
         let vType = 'CAR';
         let isMoving = (cursorX > 4500 && Math.random() > 0.6);
@@ -236,16 +180,7 @@ export class LevelGenerator {
 
         this.vehicles.push(new Vehicle(cursorX, this.groundY, vType, isMoving));
         cursorX += 420;
-      } else if (roll < 0.65) {
-        // Trampoline launching pad
-        this.trampolines.push(new Trampoline(cursorX, this.groundY));
-        for (let i = 0; i < 5; i++) {
-          const coinX = cursorX + 30 + i * 28;
-          const coinY = this.groundY - 140 - Math.sin((i / 4) * Math.PI) * 50;
-          this.coins.push(new Coin(coinX, coinY));
-        }
-        cursorX += 260;
-      } else if (roll < 0.80) {
+      } else if (roll < 0.75) {
         // Reachable smooth coin waves
         const count = 6 + Math.floor(Math.random() * 6);
         for (let i = 0; i < count; i++) {
@@ -254,10 +189,10 @@ export class LevelGenerator {
           this.coins.push(new Coin(coinX, this.groundY - 45 - arc));
         }
         cursorX += count * 36 + 140;
-      } else if (roll < 0.88) {
+      } else if (roll < 0.86) {
         this.mysteryBoxes.push(new MysteryBox(cursorX, this.groundY - 80));
         cursorX += 300;
-      } else if (roll < 0.94 && cursorX > 3500) {
+      } else if (roll < 0.93 && cursorX > 3500) {
         this.bombs.push(new Bomb(cursorX, this.groundY));
         cursorX += 320;
       } else {
@@ -278,7 +213,6 @@ export class LevelGenerator {
     this.puddles = this.puddles.filter(p => p.x + p.width >= minX);
     this.manholes = this.manholes.filter(m => m.x >= minX);
     this.barriers = this.barriers.filter(b => b.x + b.width >= minX);
-    this.trampolines = this.trampolines.filter(t => t.x + t.width >= minX);
   }
 
   draw(ctx, cameraX) {
@@ -405,11 +339,6 @@ export class LevelGenerator {
     // Draw Warning Barriers
     for (const b of this.barriers) {
       b.draw(ctx, cameraX);
-    }
-
-    // Draw Trampolines
-    for (const tr of this.trampolines) {
-      tr.draw(ctx, cameraX);
     }
 
     for (const c of this.coins) c.draw(ctx, cameraX);

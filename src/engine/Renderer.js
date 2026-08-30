@@ -10,7 +10,6 @@ export class Camera {
     this.shakeX = 0;
     this.shakeY = 0;
     this.zoom = 1.0;
-    this.targetZoom = 1.0;
   }
 
   addTrauma(amount) {
@@ -20,11 +19,6 @@ export class Camera {
   update(dt, targetX, leaderY = 486) {
     this.targetX = targetX - 220;
     this.x += (this.targetX - this.x) * Math.min(1, 10 * dt);
-
-    // Dynamic Zoom Breathing: slightly zoom out during high aerial jumps
-    const heightAboveGround = Math.max(0, 540 - 54 - leaderY);
-    this.targetZoom = heightAboveGround > 70 ? 0.94 : 1.0;
-    this.zoom += (this.targetZoom - this.zoom) * Math.min(1, 4.5 * dt);
 
     if (this.trauma > 0) {
       this.trauma = Math.max(0, this.trauma - dt * 1.5);
@@ -75,27 +69,33 @@ export class Renderer {
   }
 
   drawBackground(cameraX) {
-    // 1. Render Active Panoramic Backgrounds with Dynamic Alpha Cross-fade
+    // 1. Get smoothly crossfading visible zones
     const visibleZones = biomeManager.getRenderableZones(cameraX, this.width, assets);
 
+    // 2. Base continuous sky gradient layer (guarantees vibrant background with zero black voids)
     for (const vz of visibleZones) {
-      if (vz.alpha > 0.005 && vz.theme && vz.theme.img) {
+      if (vz.alpha > 0.001) {
         this.ctx.save();
         this.ctx.globalAlpha = vz.alpha;
-        this.drawPanoramicBackground(vz.theme.img, vz.progress, vz.theme.roadStyle);
+        const grad = this.ctx.createLinearGradient(0, 0, 0, 540);
+        const colors = vz.skyGradient || ['#0f172a', '#1e1b4b', '#3b0764', '#1e1b4b'];
+        grad.addColorStop(0, colors[0]);
+        grad.addColorStop(0.35, colors[1]);
+        grad.addColorStop(0.7, colors[2]);
+        grad.addColorStop(1, colors[3]);
+        this.ctx.fillStyle = grad;
+        this.ctx.fillRect(0, 0, this.width, this.height);
         this.ctx.restore();
       }
     }
 
-    // 2. Render Active Transition Structures (Mountain Tunnel, Suspension Bridge, Grand Portal)
-    const transitions = biomeManager.getTransitions(cameraX, this.width);
-    for (const tr of transitions) {
-      if (tr.type === 'TUNNEL') {
-        this.drawMountainTunnelSegment(cameraX, tr.startX, tr.endX);
-      } else if (tr.type === 'BRIDGE') {
-        this.drawSuspensionBridgeSegment(cameraX, tr.startX, tr.endX);
-      } else {
-        this.drawGatewayPortalSegment(cameraX, tr.startX, tr.endX);
+    // 3. Render panoramic background images with smooth Hermite alpha crossfade
+    for (const vz of visibleZones) {
+      if (vz.alpha > 0.001) {
+        this.ctx.save();
+        this.ctx.globalAlpha = vz.alpha;
+        this.drawPanoramicBackground(vz.theme.img, vz.progress, vz.theme.roadStyle);
+        this.ctx.restore();
       }
     }
   }
@@ -247,232 +247,6 @@ export class Renderer {
     this.ctx.restore();
   }
 
-  drawMountainTunnelSegment(cameraX, tStart, tEnd) {
-    this.ctx.save();
-
-    // 1. Mountain Rock Mass Background (Blocks out the sky completely inside the mountain!)
-    const rStart = tStart - cameraX;
-    const rEnd = tEnd - cameraX;
-
-    if (rEnd > 0 && rStart < this.width) {
-      const clampLeft = Math.max(0, rStart);
-      const clampRight = Math.min(this.width, rEnd);
-
-      if (clampRight > clampLeft) {
-        // Deep Mountain Rock Wall
-        this.ctx.fillStyle = '#11141a';
-        this.ctx.fillRect(clampLeft, 0, clampRight - clampLeft, 540);
-
-        // Mountain rock strata layers
-        this.ctx.fillStyle = '#181c24';
-        for (let i = 0; i < 6; i++) {
-          this.ctx.fillRect(clampLeft, 60 + i * 80, clampRight - clampLeft, 8);
-        }
-      }
-    }
-
-    // 2. Repetitive Concrete Tunnel Arches & Volumetric Overhead Lights
-    for (let x = tStart; x <= tEnd; x += 220) {
-      const rx = x - cameraX;
-      if (rx < -300 || rx > this.width + 300) continue;
-
-      // Heavy Concrete Support Arch
-      this.ctx.fillStyle = '#1e232d';
-      this.ctx.beginPath();
-      this.ctx.roundRect(rx, 0, 180, 540, [0, 0, 50, 0]);
-      this.ctx.fill();
-
-      this.ctx.fillStyle = '#2d3342';
-      this.ctx.fillRect(rx, 0, 180, 48);
-
-      // Yellow Warning Stripes along arch pillar
-      this.ctx.fillStyle = '#f1c40f';
-      this.ctx.fillRect(rx + 150, 48, 8, 492);
-      this.ctx.fillStyle = '#15181e';
-      for (let sy = 50; sy < 540; sy += 30) {
-        this.ctx.fillRect(rx + 150, sy, 8, 12);
-      }
-
-      // Volumetric Fluorescent Overhead Light Cone
-      this.ctx.fillStyle = 'rgba(241, 196, 15, 0.18)';
-      this.ctx.beginPath();
-      this.ctx.moveTo(rx + 50, 48);
-      this.ctx.lineTo(rx + 130, 48);
-      this.ctx.lineTo(rx + 200, 540);
-      this.ctx.lineTo(rx - 20, 540);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Glowing Lamp Fixture
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(rx + 60, 42, 60, 6);
-      this.ctx.fillStyle = '#f1c40f';
-      this.ctx.fillRect(rx + 55, 40, 70, 4);
-    }
-
-    // 3. Grand Mountain Entrance Portal
-    const entranceRx = tStart - cameraX;
-    if (entranceRx >= -400 && entranceRx <= this.width + 400) {
-      this.ctx.fillStyle = '#222733';
-      this.ctx.beginPath();
-      this.ctx.moveTo(entranceRx - 400, 540);
-      this.ctx.lineTo(entranceRx, 0);
-      this.ctx.lineTo(entranceRx + 120, 0);
-      this.ctx.lineTo(entranceRx + 120, 540);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.fillStyle = '#0f1318';
-      this.ctx.fillRect(entranceRx - 30, 80, 140, 50);
-      this.ctx.strokeStyle = '#f1c40f';
-      this.ctx.lineWidth = 3;
-      this.ctx.strokeRect(entranceRx - 30, 80, 140, 50);
-
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = `900 18px 'Outfit', sans-serif`;
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('穿山隧道', entranceRx + 40, 105);
-      this.ctx.font = `700 11px 'Outfit', sans-serif`;
-      this.ctx.fillText('MOUNTAIN TUNNEL', entranceRx + 40, 122);
-    }
-
-    // 4. Sunny Beach Exit Portal
-    const exitRx = tEnd - cameraX;
-    if (exitRx >= -400 && exitRx <= this.width + 400) {
-      this.ctx.fillStyle = '#222733';
-      this.ctx.beginPath();
-      this.ctx.moveTo(exitRx, 0);
-      this.ctx.lineTo(exitRx + 400, 540);
-      this.ctx.lineTo(exitRx - 100, 540);
-      this.ctx.lineTo(exitRx - 100, 0);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.fillStyle = '#0f1318';
-      this.ctx.fillRect(exitRx - 20, 80, 140, 50);
-      this.ctx.strokeStyle = '#3498db';
-      this.ctx.lineWidth = 3;
-      this.ctx.strokeRect(exitRx - 20, 80, 140, 50);
-
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = `900 18px 'Outfit', sans-serif`;
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('生态出口', exitRx + 50, 105);
-      this.ctx.font = `700 11px 'Outfit', sans-serif`;
-      this.ctx.fillText('BIOME PORTAL', exitRx + 50, 122);
-    }
-
-    this.ctx.restore();
-  }
-
-  drawSuspensionBridgeSegment(cameraX, bStart, bEnd) {
-    this.ctx.save();
-
-    // 1. Deep Blue Ocean Underneath the Bridge
-    const brStart = bStart - cameraX;
-    const brEnd = bEnd - cameraX;
-
-    if (brEnd > 0 && brStart < this.width) {
-      const clampL = Math.max(0, brStart);
-      const clampR = Math.min(this.width, brEnd);
-
-      if (clampR > clampL) {
-        this.ctx.fillStyle = 'rgba(41, 128, 185, 0.4)';
-        this.ctx.fillRect(clampL, 420, clampR - clampL, 120);
-
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-        this.ctx.lineWidth = 2;
-        for (let ox = clampL; ox < clampR; ox += 60) {
-          this.ctx.beginPath();
-          this.ctx.arc(ox + 30, 480, 25, Math.PI, 0);
-          this.ctx.stroke();
-        }
-      }
-    }
-
-    // 2. Giant Red Golden Gate Style Suspension Towers (every 700px)
-    for (let x = bStart + 350; x <= bEnd - 350; x += 700) {
-      const rx = x - cameraX;
-      if (rx < -400 || rx > this.width + 400) continue;
-
-      this.ctx.fillStyle = '#7f8c8d';
-      this.ctx.fillRect(rx - 30, 440, 60, 100);
-
-      this.ctx.fillStyle = '#c0392b';
-      this.ctx.fillRect(rx - 20, 0, 40, 540);
-
-      this.ctx.fillStyle = '#a93226';
-      this.ctx.fillRect(rx - 55, 80, 110, 20);
-      this.ctx.fillRect(rx - 55, 240, 110, 20);
-      this.ctx.fillRect(rx - 55, 400, 110, 20);
-
-      this.ctx.strokeStyle = '#e74c3c';
-      this.ctx.lineWidth = 8;
-      this.ctx.beginPath();
-      this.ctx.moveTo(rx - 350, 80);
-      this.ctx.quadraticCurveTo(rx, 390, rx + 350, 80);
-      this.ctx.stroke();
-
-      this.ctx.strokeStyle = 'rgba(231, 76, 60, 0.65)';
-      this.ctx.lineWidth = 2.5;
-      for (let vx = -330; vx <= 330; vx += 30) {
-        const cableY = 80 + Math.pow(vx / 350, 2) * 310;
-        this.ctx.beginPath();
-        this.ctx.moveTo(rx + vx, cableY);
-        this.ctx.lineTo(rx + vx, 540);
-        this.ctx.stroke();
-      }
-    }
-
-    // 3. Bridge Entrance Portals
-    const entranceRx = bStart - cameraX;
-    if (entranceRx >= -300 && entranceRx <= this.width + 300) {
-      this.ctx.fillStyle = '#c0392b';
-      this.ctx.fillRect(entranceRx - 20, 120, 140, 45);
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = `900 17px 'Outfit', sans-serif`;
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('跨海大桥', entranceRx + 50, 142);
-      this.ctx.font = `700 10px 'Outfit', sans-serif`;
-      this.ctx.fillText('SEA BRIDGE', entranceRx + 50, 156);
-    }
-
-    const exitRx = bEnd - cameraX;
-    if (exitRx >= -300 && exitRx <= this.width + 300) {
-      this.ctx.fillStyle = '#d35400';
-      this.ctx.fillRect(exitRx - 20, 120, 140, 45);
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = `900 17px 'Outfit', sans-serif`;
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('大桥出口', exitRx + 50, 142);
-      this.ctx.font = `700 10px 'Outfit', sans-serif`;
-      this.ctx.fillText('BRIDGE PORTAL', exitRx + 50, 156);
-    }
-
-    this.ctx.restore();
-  }
-
-  drawGatewayPortalSegment(cameraX, pStart, pEnd) {
-    this.ctx.save();
-    const entranceRx = pStart - cameraX;
-    if (entranceRx >= -400 && entranceRx <= this.width + 400) {
-      this.ctx.fillStyle = '#1e272e';
-      this.ctx.fillRect(entranceRx - 20, 40, 160, 500);
-      this.ctx.fillRect(entranceRx + 320, 40, 160, 500);
-      this.ctx.fillStyle = '#2f3542';
-      this.ctx.fillRect(entranceRx - 30, 40, 520, 50);
-
-      this.ctx.fillStyle = '#00d2d3';
-      this.ctx.fillRect(entranceRx - 30, 85, 520, 5);
-
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = `900 20px 'Outfit', sans-serif`;
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('极速关卡过场', entranceRx + 230, 72);
-    }
-    this.ctx.restore();
-  }
-
   drawAmbientTransformationAtmosphere(transformType) {
     if (!transformType || transformType === 'NONE') return;
 
@@ -600,30 +374,6 @@ export class Renderer {
       this.ctx.beginPath();
       this.ctx.arc(lampX, lampTopY, 4, 0, Math.PI * 2);
       this.ctx.fill();
-    }
-    this.ctx.restore();
-  }
-
-  drawSpeedLines(gameSpeed, isFever = false, isTransform = false) {
-    if (gameSpeed < 230 && !isFever && !isTransform) return;
-
-    this.ctx.save();
-    const intensity = isFever || isTransform ? 1.0 : Math.min(1.0, (gameSpeed - 230) / 120);
-    const lineCount = Math.floor(12 * intensity);
-    const time = performance.now() * 0.003;
-
-    this.ctx.lineWidth = 2.5;
-    for (let i = 0; i < lineCount; i++) {
-      const y = ((i * 59 + time * 400) % (this.height - 180)) + 60;
-      const length = 120 + Math.sin(i * 13 + time) * 80;
-      const x = (this.width + 100) - ((time * 800 + i * 210) % (this.width + 300));
-      const alpha = (0.15 + Math.sin(i * 7 + time) * 0.1) * intensity;
-
-      this.ctx.strokeStyle = isFever ? `rgba(241, 196, 15, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, y);
-      this.ctx.lineTo(x + length, y);
-      this.ctx.stroke();
     }
     this.ctx.restore();
   }

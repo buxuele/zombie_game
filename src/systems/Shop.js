@@ -18,9 +18,9 @@ export const UPGRADES_CATALOG = [
     prices: [0, 200, 500, 1000]
   },
   {
-    key: 'magnetRadius',
-    name: '金币磁力发生器',
-    desc: '大幅扩大自动吸附金币与大脑的范围',
+    key: 'feverDuration',
+    name: '狂热暴走增幅',
+    desc: '大幅延长吞噬大脑触发的无敌狂热冲刺时间',
     maxLevel: 5,
     prices: [0, 100, 250, 500, 900]
   },

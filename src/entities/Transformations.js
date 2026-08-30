@@ -1,4 +1,5 @@
 import { audio } from '../engine/Audio.js';
+import { assets } from '../engine/AssetLoader.js';
 
 export const TRANSFORMATION_TYPES = {
   TSUNAMI: {
@@ -205,119 +206,218 @@ export class TransformationManager {
   drawDragon(ctx, renderX, leaderY, horde, cameraX) {
     ctx.save();
     const living = horde.zombies.filter(z => z.alive);
+    if (living.length === 0) {
+      ctx.restore();
+      return;
+    }
 
-    // 1. Articulated Dragon Serpentine Body Segments
-    for (let i = living.length - 1; i >= 0; i--) {
-      const z = living[i];
-      const zx = z.x - cameraX + z.width / 2;
-      const zy = z.y + z.height / 2;
-      const tilt = Math.sin(this.wavePhase * 2.2 - i * 0.5) * 0.35;
+    // 1. Compute dragon spine nodes from living zombies
+    const spine = living.map((z, idx) => ({
+      x: z.x - cameraX + z.width / 2,
+      y: z.y + z.height / 2,
+      scale: Math.max(0.6, 1.0 - (idx / living.length) * 0.4)
+    }));
+
+    // Add extra tail extension
+    if (spine.length > 0) {
+      const tailBase = spine[spine.length - 1];
+      const tailX = tailBase.x - 45;
+      const tailY = tailBase.y + Math.sin(this.wavePhase * 2.5 - spine.length) * 20;
+      spine.push({ x: tailX, y: tailY, scale: 0.4 });
+    }
+
+    // 2. Swirling Celestial Golden Dragon Aura
+    ctx.save();
+    ctx.strokeStyle = 'rgba(241, 196, 15, 0.25)';
+    ctx.lineWidth = 55;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(spine[0].x + 30, spine[0].y);
+    for (let i = 0; i < spine.length; i++) {
+      ctx.lineTo(spine[i].x, spine[i].y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 3. Continuous Serpentine Main Dragon Body
+    // Outer Crimson & Gold Trim
+    ctx.save();
+    ctx.strokeStyle = '#c0392b';
+    ctx.lineWidth = 36;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(spine[0].x + 20, spine[0].y);
+    for (let i = 0; i < spine.length; i++) {
+      ctx.lineTo(spine[i].x, spine[i].y);
+    }
+    ctx.stroke();
+
+    // Inner Golden Scaled Core
+    ctx.strokeStyle = '#f1c40f';
+    ctx.lineWidth = 20;
+    ctx.beginPath();
+    ctx.moveTo(spine[0].x + 20, spine[0].y);
+    for (let i = 0; i < spine.length; i++) {
+      ctx.lineTo(spine[i].x, spine[i].y);
+    }
+    ctx.stroke();
+
+    // Dorsal Fiery Spines along the spine
+    for (let i = 0; i < spine.length - 1; i++) {
+      const p = spine[i];
+      const nextP = spine[i + 1];
+      const midX = (p.x + nextP.x) / 2;
+      const midY = (p.y + nextP.y) / 2;
+      const spineTilt = Math.sin(this.wavePhase * 2.8 - i * 0.7) * 0.4;
 
       ctx.save();
-      ctx.translate(zx, zy);
-      ctx.rotate(tilt);
-
-      // Dorsal Fin
-      ctx.fillStyle = '#f39c12';
+      ctx.translate(midX, midY - 18);
+      ctx.rotate(spineTilt);
+      ctx.fillStyle = '#e67e22';
       ctx.beginPath();
-      ctx.moveTo(-8, -20);
-      ctx.lineTo(0, -32);
-      ctx.lineTo(8, -20);
+      ctx.moveTo(-10, 10);
+      ctx.lineTo(0, -18);
+      ctx.lineTo(10, 10);
       ctx.closePath();
       ctx.fill();
-
-      // Main Segment Body (Ruby Red with Gold Rim)
-      ctx.fillStyle = (i % 2 === 0) ? '#c0392b' : '#e74c3c';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 28, 22, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#f1c40f';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-
-      // Shimmering Dragon Scales
       ctx.fillStyle = '#f1c40f';
       ctx.beginPath();
-      ctx.arc(0, -8, 7, 0, Math.PI);
+      ctx.moveTo(-5, 8);
+      ctx.lineTo(0, -10);
+      ctx.lineTo(5, 8);
+      ctx.closePath();
       ctx.fill();
+      ctx.restore();
+    }
+
+    // 4. Sharp Imperial Dragon Talons / Claws
+    const clawIndices = [Math.floor(spine.length * 0.25), Math.floor(spine.length * 0.75)];
+    for (const cIdx of clawIndices) {
+      if (cIdx < spine.length) {
+        const node = spine[cIdx];
+        const clawAnim = Math.sin(this.wavePhase * 3.0 + cIdx) * 8;
+        ctx.save();
+        ctx.translate(node.x, node.y + 14 + clawAnim);
+        ctx.fillStyle = '#d35400';
+        ctx.beginPath();
+        ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        ctx.fill();
+        // 4 Talons
+        ctx.fillStyle = '#ffffff';
+        for (let a = -1.2; a <= 1.2; a += 0.8) {
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * 6, Math.sin(a) * 6);
+          ctx.lineTo(Math.cos(a) * 18, Math.sin(a) * 18 + 6);
+          ctx.lineTo(Math.cos(a + 0.3) * 6, Math.sin(a + 0.3) * 6);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+
+    // 5. Majestic Dragon Head (Asset Sprite or Vector Fallback)
+    const headNode = spine[0];
+    const headX = headNode.x + 35;
+    const headY = headNode.y - 12;
+
+    if (assets.sprites.dragonHead) {
+      ctx.save();
+      const headSize = 135;
+      const headBob = Math.sin(this.wavePhase * 2.5) * 6;
+      ctx.translate(headX - 45, headY - 60 + headBob);
+      ctx.drawImage(assets.sprites.dragonHead, 0, 0, headSize, headSize);
+      ctx.restore();
+    } else {
+      // High-End Vector Dragon Head
+      ctx.save();
+      ctx.translate(headX, headY);
+      const jawOpen = Math.abs(Math.sin(this.wavePhase * 3)) * 8;
+
+      // Head Crown & Antlers
+      ctx.fillStyle = '#f1c40f';
+      ctx.beginPath();
+      ctx.moveTo(-15, -15);
+      ctx.lineTo(-35, -45);
+      ctx.lineTo(-20, -25);
+      ctx.lineTo(-10, -50);
+      ctx.lineTo(0, -20);
+      ctx.fill();
+
+      // Dragon Skull Base
+      ctx.fillStyle = '#c0392b';
+      ctx.beginPath();
+      ctx.roundRect(-20, -25, 55, 38, 12);
+      ctx.fill();
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Glowing Cyan Dragon Eyes
+      ctx.fillStyle = '#00d2d3';
+      ctx.beginPath();
+      ctx.arc(8, -12, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(10, -14, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Snout & Upper Jaw
+      ctx.fillStyle = '#e74c3c';
+      ctx.beginPath();
+      ctx.roundRect(10, -10, 36, 18, 5);
+      ctx.fill();
+
+      // Lower Jaw (Chomping)
+      ctx.fillStyle = '#c0392b';
+      ctx.beginPath();
+      ctx.roundRect(10, 8 + jawOpen, 32, 12, 4);
+      ctx.fill();
+
+      // Sharp White Fangs
+      ctx.fillStyle = '#ffffff';
+      for (let fx = 16; fx <= 36; fx += 10) {
+        ctx.beginPath();
+        ctx.moveTo(fx, 6);
+        ctx.lineTo(fx + 4, 14);
+        ctx.lineTo(fx + 8, 6);
+        ctx.fill();
+      }
+
+      // Flowing Golden Whiskers
+      ctx.strokeStyle = '#f1c40f';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(35, 0);
+      ctx.quadraticCurveTo(75, 10 + Math.sin(this.wavePhase * 3) * 14, 60, 40 + Math.cos(this.wavePhase * 3) * 15);
+      ctx.stroke();
 
       ctx.restore();
     }
 
-    // 2. Dragon Glorious Head at Front
-    const headX = renderX + 50;
-    const headY = leaderY + 24;
-    const jawOpen = Math.abs(Math.sin(this.wavePhase * 3)) * 8;
-
+    // 6. Luminous Celestial Dragon Pearl (火龙珠)
+    const pearlX = headX + 115;
+    const pearlY = headY + Math.sin(this.wavePhase * 3.5) * 16;
     ctx.save();
-    ctx.translate(headX, headY);
-
-    // Head Base
-    ctx.fillStyle = '#c0392b';
+    // Swirling Dragon Fire Aura
+    ctx.fillStyle = 'rgba(243, 156, 18, 0.35)';
     ctx.beginPath();
-    ctx.arc(0, 0, 30, 0, Math.PI * 2);
+    ctx.arc(pearlX, pearlY, 22, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#f1c40f';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Dragon Crown Horns
-    ctx.fillStyle = '#f1c40f';
+    // Pearl Sphere
+    const pearlGrad = ctx.createRadialGradient(pearlX - 4, pearlY - 4, 2, pearlX, pearlY, 14);
+    pearlGrad.addColorStop(0, '#ffffff');
+    pearlGrad.addColorStop(0.4, '#f1c40f');
+    pearlGrad.addColorStop(1, '#e67e22');
+    ctx.fillStyle = pearlGrad;
     ctx.beginPath();
-    ctx.moveTo(-10, -18);
-    ctx.lineTo(-26, -48);
-    ctx.lineTo(-4, -24);
+    ctx.arc(pearlX, pearlY, 13, 0, Math.PI * 2);
     ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(4, -18);
-    ctx.lineTo(20, -48);
-    ctx.lineTo(12, -24);
-    ctx.fill();
-
-    // Snout and Jaws
-    ctx.fillStyle = '#e74c3c';
-    ctx.beginPath();
-    ctx.roundRect(8, -12, 28, 14, 4);
-    ctx.fill();
-
-    // Lower Jaw (Animated Chomping)
-    ctx.fillStyle = '#c0392b';
-    ctx.beginPath();
-    ctx.roundRect(8, 2 + jawOpen, 26, 10, 3);
-    ctx.fill();
-
-    // Sharp White Dragon Fangs
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(14, 2);
-    ctx.lineTo(18, 9);
-    ctx.lineTo(22, 2);
-    ctx.fill();
-
-    // Glowing Ruby Eyes with Yellow Catchlight
-    ctx.fillStyle = '#f1c40f';
-    ctx.beginPath();
-    ctx.arc(6, -8, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#e74c3c';
-    ctx.beginPath();
-    ctx.arc(8, -8, 4.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(9, -10, 1.8, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Long Flowing Golden Whiskers
-    ctx.strokeStyle = '#f1c40f';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(24, -2);
-    ctx.quadraticCurveTo(55, 6 + Math.sin(this.wavePhase * 3) * 10, 48, 28 + Math.cos(this.wavePhase * 3) * 12);
-    ctx.stroke();
-
     ctx.restore();
+
     ctx.restore();
   }
 
