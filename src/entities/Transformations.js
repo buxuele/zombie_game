@@ -36,7 +36,7 @@ export const TRANSFORMATION_TYPES = {
     id: 'DRAGON',
     name: '东方神龙',
     color: '#e74c3c',
-    duration: 10
+    duration: 5
   }
 };
 
