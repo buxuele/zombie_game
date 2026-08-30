@@ -180,17 +180,16 @@ export class LevelGenerator {
         }
         cursorX += groupSize * 42 + 180;
       } else if (roll < 0.62) {
-        // Vehicles: plentiful small cars in early game (cursorX < 7000px)
+        // Vehicles: All parked solidly on the road waiting to be pushed/flipped
         const vehicleRoll = Math.random();
         let vType = 'CAR';
-        let isMoving = (cursorX > 4000 && Math.random() > 0.55);
 
         if (cursorX > 8000 && vehicleRoll > 0.8) vType = 'AIRPLANE';
         else if (cursorX > 5500 && vehicleRoll > 0.55) vType = 'TANK';
         else if (cursorX > 3200 && vehicleRoll > 0.40) vType = 'BUS';
         else vType = 'CAR';
 
-        this.vehicles.push(new Vehicle(cursorX, this.groundY, vType, isMoving));
+        this.vehicles.push(new Vehicle(cursorX, this.groundY, vType, false));
 
         // Occasionally spawn an extra car shortly after in early-to-mid zones for combo flips
         if (cursorX < 7000 && Math.random() > 0.65) {

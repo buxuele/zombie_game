@@ -273,37 +273,6 @@ export class Renderer {
     this.ctx.restore();
   }
 
-  drawIncomingTrafficWarnings(vehicles, cameraX) {
-    if (!vehicles) return;
-
-    for (const v of vehicles) {
-      if (v.isMoving && v.alive && !v.isFlipped) {
-        const distToScreen = v.x - (cameraX + this.width);
-        if (distToScreen > 0 && distToScreen < 950) {
-          const flash = Math.sin(performance.now() * 0.015) > 0;
-          this.ctx.save();
-          this.ctx.translate(this.width - 45, 540 - 55);
-
-          // Red Hazard Warning Triangle
-          this.ctx.fillStyle = flash ? '#e74c3c' : '#c0392b';
-          this.ctx.beginPath();
-          this.ctx.moveTo(0, -22);
-          this.ctx.lineTo(24, 18);
-          this.ctx.lineTo(-24, 18);
-          this.ctx.closePath();
-          this.ctx.fill();
-
-          // Exclamation Mark
-          this.ctx.fillStyle = '#ffffff';
-          this.ctx.fillRect(-2.5, -10, 5, 14);
-          this.ctx.fillRect(-2.5, 8, 5, 5);
-
-          this.ctx.restore();
-        }
-      }
-    }
-  }
-
   drawVehicleHeadlights(vehicles, cameraX) {
     if (!vehicles) return;
     this.ctx.save();

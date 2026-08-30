@@ -288,9 +288,6 @@ export class Game {
     this.particles.draw(this.renderer.ctx, cameraX);
     this.floatingText.draw(this.renderer.ctx, cameraX);
 
-    // Incoming Moving Traffic Warning Indicator
-    this.renderer.drawIncomingTrafficWarnings(this.level.vehicles, cameraX);
-
     this.renderer.ctx.restore();
 
     // Screen space ambient transformation atmosphere

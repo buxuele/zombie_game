@@ -206,16 +206,21 @@ function testCivilianInfectionInheritance() {
   assert(newZ.accessory === 'hardhat', 'New zombie inherited hardhat accessory');
 }
 
-// 10. Dynamic Moving Traffic Test
+// 10. Stationary Parked Vehicle Stability Test
 function testDynamicMovingTrafficPhysics() {
-  console.log('\n--- Testing Dynamic Moving Traffic Physics ---');
-  const movingCar = new Vehicle(1000, 540, 'CAR', true);
-  assert(movingCar.isMoving === true, 'Vehicle initialized as moving');
-  assert(movingCar.moveSpeed === 160, 'Moving vehicle has forward velocity 160px/s');
+  console.log('\n--- Testing Stationary Parked Vehicle Stability ---');
+  const parkedBus = new Vehicle(1000, 540, 'BUS', false);
+  const parkedTank = new Vehicle(1500, 540, 'TANK', false);
+  assert(parkedBus.isMoving === false, 'Bus is strictly stationary parked obstacle');
+  assert(parkedBus.moveSpeed === 0, 'Bus has zero movement speed');
+  assert(parkedTank.isMoving === false, 'Tank is strictly stationary parked obstacle');
+  assert(parkedTank.moveSpeed === 0, 'Tank has zero movement speed');
 
   const dt = 0.5;
-  movingCar.update(dt, null, null);
-  assert(movingCar.x === 1000 - 160 * 0.5, `Vehicle moves towards player: ${movingCar.x} === 920`);
+  parkedBus.update(dt, null, null);
+  parkedTank.update(dt, null, null);
+  assert(parkedBus.x === 1000, 'Parked bus maintains exact stationary coordinates without random movement');
+  assert(parkedTank.x === 1500, 'Parked tank maintains exact stationary coordinates without random movement');
 }
 
 // 11. Biome Random Switch & Non-Repeating Previous Zone Test
