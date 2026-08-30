@@ -346,6 +346,29 @@ function testParticleSystemVisualTypes() {
   assert(aura !== undefined, 'Currency aura shockwave spawned successfully');
 }
 
+// 15. Adaptive Scene BGM Tracks Test
+import { audio } from '../src/engine/Audio.js';
+function testAdaptiveSceneBgmTracks() {
+  console.log('\n--- Testing Adaptive Scene BGM Soundtracks ---');
+  audio.setBgmTheme('CITY');
+  assert(audio.currentBgmTheme === 'CITY', 'BGM theme switches to CITY');
+  const cityTrack = audio.getThemeTrack('CITY');
+  assert(cityTrack.tempo === 200, 'City track tempo is 200ms');
+  assert(cityTrack.waveform === 'square', 'City track uses electro square synth');
+
+  audio.setBgmTheme('BEACH');
+  assert(audio.currentBgmTheme === 'BEACH', 'BGM theme switches to BEACH');
+  const beachTrack = audio.getThemeTrack('BEACH');
+  assert(beachTrack.tempo === 220, 'Beach track tempo is 220ms');
+  assert(beachTrack.waveform === 'triangle', 'Beach track uses cheerful triangle waveform');
+
+  audio.setBgmTheme('DESERT');
+  assert(audio.currentBgmTheme === 'DESERT', 'BGM theme switches to DESERT');
+  const desertTrack = audio.getThemeTrack('DESERT');
+  assert(desertTrack.tempo === 250, 'Desert track tempo is 250ms');
+  assert(desertTrack.waveform === 'sawtooth', 'Desert track uses mysterious sawtooth waveform');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -362,6 +385,7 @@ testBiomeSmoothAlphaCrossfade();
 testDynamicGroundShadowScaling();
 testFixedCameraStability();
 testParticleSystemVisualTypes();
+testAdaptiveSceneBgmTracks();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

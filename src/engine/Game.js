@@ -199,6 +199,10 @@ export class Game {
     // Audio underwater lowpass filter for Tsunami
     audio.setUnderwaterFilter(this.transformations.activeType === 'TSUNAMI');
 
+    // Dynamic adaptive background soundtrack switching based on active biome
+    const activeRoadStyle = biomeManager.getRoadStyleAt(leader.x);
+    audio.setBgmTheme(activeRoadStyle);
+
     this.particles.update(dt, this.renderer.camera.renderX);
     this.floatingText.update(dt);
     this.renderer.camera.update(dt, leader.x, leader.y);

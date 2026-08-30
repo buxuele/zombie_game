@@ -13,6 +13,7 @@ class AudioManager {
     this.filterNode = null;
     this.coinStreak = 0;
     this.lastCoinTime = 0;
+    this.currentBgmTheme = 'CITY';
   }
 
   init() {
@@ -225,7 +226,74 @@ class AudioManager {
   playExplosion() {
     if (!this.ctx || !storage.isSoundEnabled()) return;
     this.init();
-    this.playNoiseBurst(0.4, 0.5);
+    const now = this.ctx.currentTime;
+
+    // 1. Heavy Sub-bass Impact
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(160, now);
+    subOsc.frequency.exponentialRampToValueAtTime(26, now + 0.55);
+
+    subGain.gain.setValueAtTime(0.55, now);
+    subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.55);
+
+    subOsc.connect(subGain);
+    subGain.connect(this.sfxGain);
+    subOsc.start(now);
+    subOsc.stop(now + 0.55);
+
+    // 2. Mid Punch Distortion
+    const midOsc = this.ctx.createOscillator();
+    const midGain = this.ctx.createGain();
+    midOsc.type = 'triangle';
+    midOsc.frequency.setValueAtTime(220, now);
+    midOsc.frequency.exponentialRampToValueAtTime(36, now + 0.35);
+
+    midGain.gain.setValueAtTime(0.4, now);
+    midGain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+    midOsc.connect(midGain);
+    midGain.connect(this.sfxGain);
+    midOsc.start(now);
+    midOsc.stop(now + 0.35);
+
+    // 3. Heavy Low-pass Filtered Blast Wave Rumble
+    this.playExplosionNoise(0.55, 0.45);
+  }
+
+  playExplosionNoise(duration, volume) {
+    if (!this.ctx) return;
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    let lastOut = 0.0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      lastOut = (lastOut + 0.02 * white) / 1.02;
+      data[i] = lastOut * 3.5 * Math.exp(-2.5 * (i / bufferSize));
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(450, this.ctx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(70, this.ctx.currentTime + duration);
+
+    const gain = this.ctx.createGain();
+    const now = this.ctx.currentTime;
+    gain.gain.setValueAtTime(volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    noise.start(now);
+    noise.stop(now + duration);
   }
 
   playLaser() {
@@ -457,52 +525,120 @@ class AudioManager {
     osc.stop(now + 0.6);
   }
 
+  setBgmTheme(theme) {
+    let mappedTheme = 'CITY';
+    if (theme === 'BEACH' || theme === 'SUNSET') {
+      mappedTheme = 'BEACH';
+    } else if (theme === 'DESERT' || theme === 'FOREST' || theme === 'SCI_FI') {
+      mappedTheme = 'DESERT';
+    } else {
+      mappedTheme = 'CITY';
+    }
+
+    if (this.currentBgmTheme === mappedTheme) return;
+    this.currentBgmTheme = mappedTheme;
+  }
+
+  getThemeTrack(theme) {
+    if (theme === 'BEACH') {
+      // Tropical Beach / Sunset Calypso Bounce
+      return {
+        tempo: 220,
+        notes: [
+          [261.63, 329.63], // C4 + E4
+          [392.00, 523.25], // G4 + C5
+          [293.66, 369.99], // D4 + F#4
+          [440.00, 587.33], // A4 + D5
+          [329.63, 392.00], // E4 + G4
+          [523.25, 659.25], // C5 + E5
+          [293.66, 440.00], // D4 + A4
+          [261.63, 392.00]  // C4 + G4
+        ],
+        waveform: 'triangle',
+        volume: 0.055,
+        decay: 0.20
+      };
+    } else if (theme === 'DESERT') {
+      // Mysterious Desert / Sci-Fi / Forest Ambient Drive
+      return {
+        tempo: 250,
+        notes: [
+          [110.00, 164.81], // A2 + E3
+          [130.81, 196.00], // C3 + G3
+          [146.83, 220.00], // D3 + A3
+          [164.81, 246.94], // E3 + B3
+          [146.83, 220.00], // D3 + A3
+          [123.47, 185.00], // B2 + F#3
+          [110.00, 220.00], // A2 + A3
+          [98.00,  146.83]  // G2 + D3
+        ],
+        waveform: 'sawtooth',
+        volume: 0.038,
+        decay: 0.23
+      };
+    }
+
+    // Default: Cyber City Upbeat Synthwave
+    return {
+      tempo: 200,
+      notes: [
+        [130.81, 261.63], // C3 + C4
+        [196.00],         // G3
+        [146.83, 293.66], // D3 + D4
+        [220.00],         // A3
+        [164.81, 329.63], // E3 + E4
+        [246.94],         // B3
+        [174.61, 349.23], // F3 + F4
+        [261.63]          // C4
+      ],
+      waveform: 'square',
+      volume: 0.032,
+      decay: 0.18
+    };
+  }
+
   startBGM() {
     if (this.isBgmPlaying) return;
     this.init();
     this.isBgmPlaying = true;
     this.bgmStep = 0;
 
-    const baseChords = [
-      [130.81, 196.00], // C
-      [146.83, 220.00], // D
-      [164.81, 246.94], // E
-      [174.61, 261.63], // F
-      [196.00, 293.66], // G
-      [174.61, 261.63], // F
-      [164.81, 246.94], // E
-      [146.83, 220.00]  // D
-    ];
-
-    this.bgmTimer = setInterval(() => {
+    const playStep = () => {
       if (!this.isBgmPlaying || !this.ctx || !storage.isSoundEnabled()) return;
 
-      const chord = baseChords[this.bgmStep % baseChords.length];
+      const track = this.getThemeTrack(this.currentBgmTheme);
+      const notes = track.notes[this.bgmStep % track.notes.length];
       this.bgmStep++;
       const now = this.ctx.currentTime;
 
-      chord.forEach(freq => {
+      notes.forEach(freq => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
-        osc.type = 'triangle';
+        osc.type = track.waveform;
         osc.frequency.setValueAtTime(freq, now);
 
-        gain.gain.setValueAtTime(0.06, now);
-        gain.gain.exponentialRampToValueAtTime(0.005, now + 0.22);
+        gain.gain.setValueAtTime(track.volume, now);
+        gain.gain.exponentialRampToValueAtTime(0.002, now + track.decay);
 
         osc.connect(gain);
         gain.connect(this.bgmGain);
 
         osc.start(now);
-        osc.stop(now + 0.22);
+        osc.stop(now + track.decay);
       });
 
-      // Rhythmic Kick / Hi-hat
+      // Rhythmic Percussion Pulse
       if (this.bgmStep % 2 === 0) {
-        this.playNoiseBurst(0.04, 0.05);
+        this.playNoiseBurst(0.03, 0.04);
       }
-    }, 250);
+
+      if (this.isBgmPlaying) {
+        this.bgmTimer = setTimeout(playStep, track.tempo);
+      }
+    };
+
+    playStep();
   }
 
   startBgm() {
@@ -512,7 +648,7 @@ class AudioManager {
   stopBGM() {
     this.isBgmPlaying = false;
     if (this.bgmTimer) {
-      clearInterval(this.bgmTimer);
+      clearTimeout(this.bgmTimer);
       this.bgmTimer = null;
     }
   }
