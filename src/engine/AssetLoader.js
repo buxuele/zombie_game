@@ -60,7 +60,6 @@ export class AssetLoader {
         const pw = propsCanvas.width;
         const ph = propsCanvas.height;
         this.sprites.coin = this.extractSprite(propsCanvas, pw * 0.02, ph * 0.03, pw * 0.11, ph * 0.12);
-        this.sprites.brain = this.extractSprite(propsCanvas, pw * 0.02, ph * 0.18, pw * 0.14, ph * 0.13);
         this.sprites.bomb = this.extractSprite(propsCanvas, pw * 0.02, ph * 0.35, pw * 0.12, ph * 0.15);
         this.sprites.mysteryBox = this.extractSprite(propsCanvas, pw * 0.02, ph * 0.55, pw * 0.12, ph * 0.15);
         this.sprites.civilian = this.extractSprite(propsCanvas, pw * 0.49, ph * 0.76, pw * 0.12, ph * 0.20);

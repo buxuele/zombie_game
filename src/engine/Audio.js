@@ -124,30 +124,6 @@ class AudioManager {
     osc.stop(now + 0.16);
   }
 
-  playBrain() {
-    if (!this.ctx || !storage.isSoundEnabled()) return;
-    this.init();
-
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    const pitch = this.getPitchJitter(0.05);
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(320 * pitch, now);
-    osc.frequency.exponentialRampToValueAtTime(640 * pitch, now + 0.12);
-    osc.frequency.exponentialRampToValueAtTime(960 * pitch, now + 0.24);
-
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.24);
-
-    osc.connect(gain);
-    gain.connect(this.sfxGain);
-
-    osc.start(now);
-    osc.stop(now + 0.24);
-  }
-
   playEatCivilian() {
     if (!this.ctx || !storage.isSoundEnabled()) return;
     this.init();

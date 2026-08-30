@@ -157,11 +157,6 @@ body {
   text-transform: uppercase;
 }
 
-.hud-val-brains {
-  color: var(--accent-pink);
-  font-size: 18px;
-}
-
 .hud-val-coins {
   color: var(--accent-gold);
   font-size: 18px;

@@ -49,7 +49,7 @@ export class Civilian {
       particleSystem.spawnCivilianPanic(this.x + this.width / 2, this.y);
     }
     if (floatingText) {
-      floatingText.spawn(this.x + this.width / 2, this.y - 20, '+1 大脑', '#ff4081', 22);
+      floatingText.spawn(this.x + this.width / 2, this.y - 20, '+1 僵尸', '#2ecc71', 22);
       floatingText.spawn(this.x + this.width / 2, this.y - 45, '!', '#f1c40f', 26, 0.4);
     }
   }

@@ -1,6 +1,6 @@
 import { Vehicle } from '../entities/Vehicle.js';
 import { Civilian } from '../entities/Civilian.js';
-import { Coin, BrainCollectible, Bomb, MysteryBox } from '../entities/Obstacle.js';
+import { Coin, Bomb, MysteryBox } from '../entities/Obstacle.js';
 import { biomeManager } from './BiomeManager.js';
 import { GAME_CONFIG } from '../config/GameConfig.js';
 
@@ -44,7 +44,6 @@ export class LevelGenerator {
     this.vehicles = [];
     this.civilians = [];
     this.coins = [];
-    this.brains = [];
     this.bombs = [];
     this.mysteryBoxes = [];
     this.puddles = [];
@@ -62,7 +61,6 @@ export class LevelGenerator {
     this.vehicles = [];
     this.civilians = [];
     this.coins = [];
-    this.brains = [];
     this.bombs = [];
     this.mysteryBoxes = [];
     this.barriers = [];
@@ -97,7 +95,8 @@ export class LevelGenerator {
     this.civilians.push(new Civilian(1620, this.groundY));
     this.vehicles.push(new Vehicle(1820, this.groundY, 'CAR'));
 
-    this.brains.push(new BrainCollectible(2060, this.groundY - 80));
+    this.coins.push(new Coin(2060, this.groundY - 60));
+    this.coins.push(new Coin(2096, this.groundY - 60));
 
     for (let i = 0; i < 8; i++) {
       const arc = Math.sin((i / 7) * Math.PI) * 45;
@@ -214,8 +213,12 @@ export class LevelGenerator {
         this.bombs.push(new Bomb(cursorX, this.groundY));
         cursorX += 320;
       } else {
-        this.brains.push(new BrainCollectible(cursorX, this.groundY - 75));
-        cursorX += 240;
+        // Crisp coin trail
+        const count = 5;
+        for (let i = 0; i < count; i++) {
+          this.coins.push(new Coin(cursorX + i * 36, this.groundY - 45));
+        }
+        cursorX += count * 36 + 140;
       }
     }
   }
@@ -225,7 +228,6 @@ export class LevelGenerator {
     this.vehicles = this.vehicles.filter(v => v.x + v.width >= minX && v.alive);
     this.civilians = this.civilians.filter(c => c.x + c.width >= minX && c.alive);
     this.coins = this.coins.filter(c => c.x + c.width >= minX && !c.collected);
-    this.brains = this.brains.filter(b => b.x + b.width >= minX && !b.collected);
     this.bombs = this.bombs.filter(b => b.x + b.width >= minX && b.alive);
     this.mysteryBoxes = this.mysteryBoxes.filter(m => m.x + m.width >= minX && !m.collected);
     this.puddles = this.puddles.filter(p => p.x + p.width >= minX);
@@ -366,7 +368,6 @@ export class LevelGenerator {
     }
 
     for (const c of this.coins) c.draw(ctx, cameraX);
-    for (const b of this.brains) b.draw(ctx, cameraX);
     for (const m of this.mysteryBoxes) m.draw(ctx, cameraX);
     for (const bomb of this.bombs) bomb.draw(ctx, cameraX);
     for (const civ of this.civilians) civ.draw(ctx, cameraX);

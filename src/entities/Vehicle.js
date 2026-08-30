@@ -11,7 +11,6 @@ export const VEHICLE_TYPES = {
     height: 50,
     color: '#e74c3c',
     roofColor: '#c0392b',
-    brains: 4,
     coins: 20,
     survivors: 2
   },
@@ -23,7 +22,6 @@ export const VEHICLE_TYPES = {
     height: 65,
     color: '#f1c40f',
     roofColor: '#d68910',
-    brains: 8,
     coins: 40,
     survivors: 3
   },
@@ -35,7 +33,6 @@ export const VEHICLE_TYPES = {
     height: 68,
     color: '#27ae60',
     roofColor: '#1e8449',
-    brains: 12,
     coins: 70,
     survivors: 3
   },
@@ -47,7 +44,6 @@ export const VEHICLE_TYPES = {
     height: 70,
     color: '#ecf0f1',
     roofColor: '#bdc3c7',
-    brains: 16,
     coins: 100,
     survivors: 4
   }

@@ -34,22 +34,6 @@ export class CollisionManager {
     }
   }
 
-  static handleBrains(game) {
-    for (const brain of game.level.brains) {
-      if (!brain.alive) continue;
-
-      for (const z of game.horde.zombies) {
-        if (z.alive && this.checkAABB(z, brain)) {
-          brain.collect(game.particles, game.floatingText);
-          game.sessionBrains += 1;
-          storage.addBrains(1);
-          storage.updateMission('civilians_eaten', 1);
-          break;
-        }
-      }
-    }
-  }
-
   static handleMysteryBoxes(game, dt) {
     for (const box of game.level.mysteryBoxes) {
       if (!box.alive) continue;
@@ -88,8 +72,6 @@ export class CollisionManager {
             logger.info('黄金狂潮将平民转化为金币');
           } else {
             civ.bite(game.particles, game.floatingText, game.horde);
-            game.sessionBrains += 1;
-            storage.addBrains(1);
             storage.updateMission('civilians_eaten', 1);
             this.triggerFeverCombo(game, leader);
             logger.info(`咬中并感染平民, 军团扩充至: ${game.horde.count + 1} 人`);

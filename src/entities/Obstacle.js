@@ -61,59 +61,6 @@ export class Coin {
   }
 }
 
-export class BrainCollectible {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.width = 34;
-    this.height = 34;
-    this.alive = true;
-    this.bobTimer = Math.random() * 10;
-  }
-
-  collect(particleSystem, floatingText) {
-    if (!this.alive) return;
-    this.alive = false;
-    audio.playBrain();
-
-    if (particleSystem) {
-      particleSystem.spawnInfectionBurst(this.x + this.width / 2, this.y + this.height / 2);
-    }
-    if (floatingText) {
-      floatingText.spawn(this.x + this.width / 2, this.y - 15, '+1 大脑', '#ff4081', 20);
-    }
-  }
-
-  update(dt) {
-    this.bobTimer += dt * 5;
-  }
-
-  draw(ctx, cameraX) {
-    if (!this.alive) return;
-    const renderX = this.x - cameraX;
-    const bob = Math.sin(this.bobTimer) * 5;
-    const renderY = this.y + bob;
-
-    ctx.save();
-    ctx.translate(renderX + this.width / 2, renderY + this.height / 2);
-
-    ctx.shadowColor = '#ff4081';
-    ctx.shadowBlur = 14;
-
-    if (assets.isLoaded && assets.sprites.brain) {
-      ctx.drawImage(assets.sprites.brain, -this.width / 2, -this.height / 2, this.width, this.height);
-    } else {
-      ctx.fillStyle = '#ff4081';
-      ctx.beginPath();
-      ctx.ellipse(-6, 0, 9, 11, 0, 0, Math.PI * 2);
-      ctx.ellipse(6, 0, 9, 11, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    ctx.restore();
-  }
-}
-
 export class Bomb {
   constructor(x, groundY) {
     this.x = x;

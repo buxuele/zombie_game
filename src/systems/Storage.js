@@ -1,7 +1,6 @@
 const STORAGE_KEY = 'ZOMBIE_TSUNAMI_SAVE_V1';
 
 const DEFAULT_DATA = {
-  totalBrains: 0,
   totalCoins: 200,
   highScoreDistance: 0,
   upgrades: {
@@ -69,11 +68,6 @@ export class Storage {
       return true;
     }
     return false;
-  }
-
-  addBrains(amount) {
-    this.data.totalBrains += Math.max(0, amount);
-    this.save();
   }
 
   updateHighScore(distance) {

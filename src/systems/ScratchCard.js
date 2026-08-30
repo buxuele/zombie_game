@@ -2,10 +2,10 @@ import { storage } from './Storage.js';
 import { audio } from '../engine/Audio.js';
 
 const CARD_PRIZES = [
-  { icon: 'BRAIN', label: '大脑', name: '特等奖 300 金币 + 3 大脑', coins: 300, brains: 3 },
-  { icon: 'COIN', label: '金币', name: '一等奖 250 金币', coins: 250, brains: 0 },
-  { icon: 'TSUNAMI', label: '海啸', name: '二等奖 180 金币', coins: 180, brains: 0 },
-  { icon: 'ZOMBIE', label: '僵尸', name: '幸运奖 120 金币', coins: 120, brains: 0 }
+  { icon: 'GOLD', label: '黄金', name: '特等奖 400 金币', coins: 400 },
+  { icon: 'COIN', label: '金币', name: '一等奖 250 金币', coins: 250 },
+  { icon: 'TSUNAMI', label: '海啸', name: '二等奖 180 金币', coins: 180 },
+  { icon: 'ZOMBIE', label: '僵尸', name: '幸运奖 120 金币', coins: 120 }
 ];
 
 export class ScratchCardGame {
@@ -226,15 +226,13 @@ export class ScratchCardGame {
     // Check Match
     const [s1, s2, s3] = this.currentSlots;
     let rewardCoins = 0;
-    let rewardBrains = 0;
 
     if (s1.icon === s2.icon && s2.icon === s3.icon) {
       // 3 Match Jackpot
       rewardCoins = s1.coins;
-      rewardBrains = s1.brains;
       this.msgEl.textContent = `三连绝胜! 获得 ${s1.name}`;
       this.msgEl.style.color = '#2ecc71';
-      audio.playBrain();
+      audio.playCoin();
     } else if (s1.icon === s2.icon || s2.icon === s3.icon || s1.icon === s3.icon) {
       // 2 Match Minor Prize
       rewardCoins = 140;
@@ -249,7 +247,6 @@ export class ScratchCardGame {
     }
 
     if (rewardCoins > 0) storage.addCoins(rewardCoins);
-    if (rewardBrains > 0) storage.addBrains(rewardBrains);
 
     this.updateWallet();
     if (this.onDataChanged) this.onDataChanged();

@@ -32,7 +32,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   const btnHudLog = document.getElementById('btn-hud-log');
 
   // HUD Elements
-  const hudBrains = document.getElementById('hud-brains');
   const hudCoins = document.getElementById('hud-coins');
   const hudZombies = document.getElementById('hud-zombies');
   const hudDistance = document.getElementById('hud-distance');
@@ -41,16 +40,13 @@ window.addEventListener('DOMContentLoaded', async () => {
   const transformProgressFill = document.getElementById('transform-progress-fill');
 
   // Menu Elements
-  const menuTotalBrains = document.getElementById('menu-total-brains');
   const menuTotalCoins = document.getElementById('menu-total-coins');
   const menuHighScore = document.getElementById('menu-high-score');
   const btnToggleSoundMenu = document.getElementById('btn-toggle-sound-menu');
   const btnToggleSoundPause = document.getElementById('btn-toggle-sound-pause');
 
   // Game Over Elements
-  // Game Over Elements
   const goDistance = document.getElementById('go-distance');
-  const goBrains = document.getElementById('go-brains');
   const goCoins = document.getElementById('go-coins');
   const goVehicles = document.getElementById('go-vehicles');
   const goEvaluationBadge = document.getElementById('go-evaluation-badge');
@@ -274,7 +270,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   function getGameOverEvaluation(stats) {
     const dist = stats.distance || 0;
     const vehicles = stats.vehicles || 0;
-    const brains = stats.brains || 0;
 
     let badge = 'C 落地成盒';
     let reason = '还没热身就被路障当场劝退，建议先去商店补钙。';
@@ -285,9 +280,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     } else if (dist >= 800 || vehicles >= 6) {
       badge = 'SS 拆迁特遣队';
       reason = `沿途掀翻 ${vehicles} 辆载具，本市修车厂全员加班抢修！`;
-    } else if (dist >= 500 || brains >= 25) {
+    } else if (dist >= 500) {
       badge = 'A+ 街区破坏狂';
-      reason = `疯狂掠夺 ${brains} 颗大脑，因碳水超标体重暴增导致失足！`;
+      reason = `狂暴突进 ${dist} 米，因速度过快惯性失控导致失足！`;
     } else if (dist >= 300) {
       badge = 'A 暴走先锋';
       reason = '跳得太高没看清落点，一头扎进了路面深坑。';
@@ -300,7 +295,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   function updateMenuStats() {
-    menuTotalBrains.textContent = storage.data.totalBrains;
     menuTotalCoins.textContent = storage.data.totalCoins;
     menuHighScore.textContent = `${storage.data.highScoreDistance} m`;
 
@@ -402,7 +396,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Initialize Game Instance
   const game = new Game(canvas, {
     onHudUpdate: (stats) => {
-      hudBrains.textContent = stats.brains;
       hudCoins.textContent = stats.coins;
       hudZombies.textContent = stats.zombies;
       hudDistance.textContent = `${stats.distance} m`;
@@ -423,7 +416,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       }
     },
     onCurrencyPunch: (type) => {
-      const targetPill = type === 'coin' ? hudCoins.parentElement : hudBrains.parentElement;
+      const targetPill = hudCoins.parentElement;
       if (targetPill) {
         targetPill.classList.remove('hud-pill-punch');
         void targetPill.offsetWidth; // Trigger reflow
@@ -445,7 +438,6 @@ window.addEventListener('DOMContentLoaded', async () => {
 
       // Slot-machine animated number roll
       animateRollNumber(goDistance, stats.distance, ' m');
-      animateRollNumber(goBrains, stats.brains);
       animateRollNumber(goCoins, stats.coins);
       animateRollNumber(goVehicles, stats.vehicles);
 

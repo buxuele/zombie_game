@@ -197,8 +197,8 @@ export class FlyingCurrency {
     this.startY = startY;
     this.x = startX;
     this.y = startY;
-    this.targetType = targetType; // 'coin' or 'brain'
-    this.targetX = targetType === 'coin' ? 120 : 60; // Screen space coordinates
+    this.targetType = 'coin';
+    this.targetX = 60; // Screen space coordinates
     this.targetY = 24;
     this.progress = 0;
     this.active = true;

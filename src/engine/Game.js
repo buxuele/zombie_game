@@ -37,7 +37,6 @@ export class Game {
     this.gameSpeed = 190;
     this.distance = 0;
     this.sessionCoins = 0;
-    this.sessionBrains = 0;
     this.sessionFlippedVehicles = 0;
 
     this.horde = null;
@@ -76,7 +75,6 @@ export class Game {
 
     this.distance = 0;
     this.sessionCoins = 0;
-    this.sessionBrains = 0;
     this.sessionFlippedVehicles = 0;
     this.gameSpeed = this.initialSpeed;
     this.timeScale = 1.0;
@@ -212,7 +210,6 @@ export class Game {
     if (this.callbacks.onHudUpdate) {
       this.callbacks.onHudUpdate({
         distance: Math.floor(this.distance),
-        brains: this.sessionBrains,
         coins: this.sessionCoins,
         zombies: this.horde.count,
         speed: Math.floor(this.gameSpeed),
@@ -230,7 +227,6 @@ export class Game {
 
     // Process Game Entities & Physics Collisions via CollisionManager
     CollisionManager.handleCoins(this);
-    CollisionManager.handleBrains(this);
     CollisionManager.handleMysteryBoxes(this, dt);
     CollisionManager.handleCivilians(this);
     CollisionManager.handleVehicles(this, dt);
@@ -238,14 +234,12 @@ export class Game {
   }
 
   handleVehicleReward(v) {
-    this.sessionBrains += v.config.brains;
     this.sessionCoins += v.config.coins;
     this.sessionFlippedVehicles += 1;
-    storage.addBrains(v.config.brains);
     storage.addCoins(v.config.coins);
     storage.updateMission('cars_flipped', 1);
 
-    const bonusZombies = Math.min(3, Math.floor(v.config.brains / 4));
+    const bonusZombies = v.config.survivors || 2;
     for (let i = 0; i < bonusZombies; i++) {
       this.horde.addZombie(v.x + i * 20, 540 - 54);
     }
@@ -302,7 +296,7 @@ export class Game {
 
     const isNewRecord = this.distance > storage.data.highScoreDistance;
 
-    logger.info(`军团覆灭, 最终奔跑距离: ${Math.floor(this.distance)} m, 收集大脑: ${this.sessionBrains}, 金币: ${this.sessionCoins}`);
+    logger.info(`军团覆灭, 最终奔跑距离: ${Math.floor(this.distance)} m, 金币: ${this.sessionCoins}`);
 
     storage.updateHighScore(this.distance);
     storage.updateMission('single_run_distance', Math.floor(this.distance), true);
@@ -310,7 +304,6 @@ export class Game {
     if (this.callbacks.onGameOver) {
       this.callbacks.onGameOver({
         distance: Math.floor(this.distance),
-        brains: this.sessionBrains,
         coins: this.sessionCoins,
         vehicles: this.sessionFlippedVehicles,
         isNewRecord
