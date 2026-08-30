@@ -100,22 +100,30 @@ export class Renderer {
     }
   }
 
-  // Non-repeating High-Res Progressive Panoramic Window (Bottom Aligned to Road Baseline)
+  // High-Res Progressive Panoramic Window (Scaled so ~95% height is fully visible, cropping only ~5% top/bottom)
   drawPanoramicBackground(img, progress, biomeType = 'CITY') {
     if (img && img.complete && img.naturalWidth > 0) {
-      // Scale to comfortably fill and pan across the viewport
-      const panScale = 1.35;
-      const drawW = Math.max(this.width * panScale, (540 * img.naturalWidth) / img.naturalHeight);
-      const drawH = drawW * (img.naturalHeight / img.naturalWidth);
+      const visibleHeight = 540; // Road surface baseline
+      const naturalRatio = img.naturalWidth / img.naturalHeight;
+
+      // Scale height to fit visible viewport with only 5% total overflow (2.5% top, 2.5% bottom)
+      let drawH = visibleHeight * 1.05;
+      let drawW = drawH * naturalRatio;
+
+      // Ensure width at least covers the screen width with slight margin
+      if (drawW < this.width * 1.05) {
+        drawW = this.width * 1.05;
+        drawH = drawW / naturalRatio;
+      }
+
       const maxScrollX = Math.max(0, drawW - this.width);
       const clampedProg = Math.max(0, Math.min(1, progress));
       const renderX = -clampedProg * maxScrollX;
 
-      // Align image BOTTOM precisely with groundY = 540
-      // So the entire bottom landscape (street level / ground / shoreline) sits cleanly above the road
-      const renderY = 540 - drawH;
+      // Center vertically so top and bottom are cropped symmetrically by only 2.5% each (total 5%)
+      const renderY = -Math.max(0, (drawH - visibleHeight) * 0.5);
 
-      // Draw single full-bleed continuous panoramic image
+      // Draw single crisp continuous panoramic image
       this.ctx.drawImage(img, renderX, renderY, drawW, drawH);
     } else {
       // High-End Flat Cartoon Vector Procedural Fallback (Clean, Zero AI artifact, Crisp Art)
