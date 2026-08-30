@@ -4,39 +4,6 @@ import { Coin, Bomb, MysteryBox } from '../entities/Obstacle.js';
 import { biomeManager } from './BiomeManager.js';
 import { GAME_CONFIG } from '../config/GameConfig.js';
 
-export class WarningBarrier {
-  constructor(x, groundY) {
-    this.x = x;
-    this.y = groundY - 38;
-    this.width = 28;
-    this.height = 38;
-  }
-
-  draw(ctx, cameraX) {
-    const rx = this.x - cameraX;
-    ctx.save();
-    ctx.translate(rx, this.y);
-
-    ctx.fillStyle = '#e74c3c';
-    ctx.fillRect(4, 8, 20, 26);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(4, 14, 20, 6);
-    ctx.fillRect(4, 26, 20, 6);
-
-    ctx.fillStyle = '#7f8c8d';
-    ctx.fillRect(2, 34, 24, 4);
-    ctx.fillRect(6, 0, 4, 8);
-    ctx.fillRect(18, 0, 4, 8);
-
-    ctx.fillStyle = '#f1c40f';
-    ctx.beginPath();
-    ctx.arc(14, 4, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-  }
-}
-
 export class LevelGenerator {
   constructor(groundY = GAME_CONFIG.GROUND_Y) {
     this.groundY = groundY;
@@ -48,7 +15,6 @@ export class LevelGenerator {
     this.mysteryBoxes = [];
     this.puddles = [];
     this.manholes = [];
-    this.barriers = [];
 
     this.generatedDistance = 0;
     this.init();
@@ -63,7 +29,6 @@ export class LevelGenerator {
     this.coins = [];
     this.bombs = [];
     this.mysteryBoxes = [];
-    this.barriers = [];
     this.puddles = [
       { x: 900, width: 80 },
       { x: 2200, width: 110 }
@@ -139,8 +104,6 @@ export class LevelGenerator {
       // Controlled safe pit width
       const pitWidth = 80 + Math.floor(Math.random() * 18);
       
-      this.barriers.push(new WarningBarrier(currentPlatformStart - 140, this.groundY));
-
       actualStart += pitWidth;
       
       const numCoins = 4;
@@ -232,7 +195,6 @@ export class LevelGenerator {
     this.mysteryBoxes = this.mysteryBoxes.filter(m => m.x + m.width >= minX && !m.collected);
     this.puddles = this.puddles.filter(p => p.x + p.width >= minX);
     this.manholes = this.manholes.filter(m => m.x >= minX);
-    this.barriers = this.barriers.filter(b => b.x + b.width >= minX);
   }
 
   draw(ctx, cameraX) {
@@ -353,18 +315,13 @@ export class LevelGenerator {
       ctx.stroke();
     }
 
-    // Draw Puddles
+    // Draw Puddle Details
     for (const p of this.puddles) {
       const rx = p.x - cameraX;
-      ctx.fillStyle = 'rgba(52, 152, 219, 0.35)';
+      ctx.fillStyle = '#0984e3';
       ctx.beginPath();
       ctx.ellipse(rx + p.width / 2, this.groundY + 3, p.width / 2, 4, 0, 0, Math.PI * 2);
       ctx.fill();
-    }
-
-    // Draw Warning Barriers
-    for (const b of this.barriers) {
-      b.draw(ctx, cameraX);
     }
 
     for (const c of this.coins) c.draw(ctx, cameraX);
