@@ -419,6 +419,24 @@ function testEarlyCarDensity() {
   assert(totalVehiclesInRunway >= 3, `Total vehicles in early runway is at least 3: ${totalVehiclesInRunway}`);
 }
 
+// 19. Civilian Abyss Fall Physics & Pit Detection Test
+import { Civilian } from '../src/entities/Civilian.js';
+function testCivilianAbyssFallPhysics() {
+  console.log('\n--- Testing Civilian Abyss Fall Physics & Pit Detection ---');
+  const lg = new LevelGenerator(540);
+  lg.platforms = [
+    { startX: 0, endX: 1000 },
+    { startX: 1500, endX: 2500 }
+  ];
+
+  const civ = new Civilian(1200, 540); // Spawned in gap
+  assert(!civ.isFalling, 'Civilian starts standing');
+  civ.update(1 / 60, null, lg);
+  assert(civ.isFalling === true, 'Civilian detects no ground underneath and starts falling');
+  assert(civ.vy > 0, 'Civilian has downward fall velocity');
+  assert(civ.y > 540 - 48, 'Civilian y position increases downwards into the abyss');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -439,6 +457,7 @@ testAdaptiveSceneBgmTracks();
 testHazardVisibilityAndProgressiveDifficulty();
 testVehicleGroundContact();
 testEarlyCarDensity();
+testCivilianAbyssFallPhysics();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

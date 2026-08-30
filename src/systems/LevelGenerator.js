@@ -125,7 +125,7 @@ export class LevelGenerator {
     this.cleanup(leaderX - 1200);
 
     for (const civ of this.civilians) {
-      civ.update(dt, particleSystem);
+      civ.update(dt, particleSystem, this);
     }
   }
 
@@ -172,7 +172,10 @@ export class LevelGenerator {
       if (roll < 0.28) {
         const groupSize = 1 + Math.floor(Math.random() * 3);
         for (let i = 0; i < groupSize; i++) {
-          this.civilians.push(new Civilian(cursorX + i * 42, this.groundY));
+          const civX = cursorX + i * 42;
+          if (this.isGroundAt(civX)) {
+            this.civilians.push(new Civilian(civX, this.groundY));
+          }
         }
         cursorX += groupSize * 42 + 180;
       } else if (roll < 0.62) {

@@ -29,10 +29,15 @@ export class Civilian {
     this.animTimer = Math.random() * 10;
     this.panicSpeed = 30 + Math.random() * 40;
     this.panicBob = Math.random() * Math.PI;
+
+    // Abyss Fall Physics
+    this.vy = 0;
+    this.isFalling = false;
+    this.fallRotation = 0;
   }
 
   bite(particleSystem, floatingText, horde) {
-    if (this.isBitten) return;
+    if (this.isBitten || this.isFalling) return;
     this.isBitten = true;
     this.infectTimer = 0.32;
     this.hordeRef = horde;
@@ -50,7 +55,7 @@ export class Civilian {
     }
   }
 
-  update(dt, particleSystem) {
+  update(dt, particleSystem, level) {
     if (!this.alive) return;
 
     if (this.isBitten) {
@@ -68,6 +73,25 @@ export class Civilian {
       return;
     }
 
+    // Check ground support underneath civilian
+    const isGrounded = level ? level.isGroundAt(this.x + this.width / 2) : true;
+    if (!isGrounded || this.isFalling) {
+      this.isFalling = true;
+      this.vy += 980 * dt;
+      this.y += this.vy * dt;
+      this.x += (this.panicSpeed * 0.5) * dt;
+      this.fallRotation += 4 * dt;
+
+      if (particleSystem && Math.random() > 0.3) {
+        particleSystem.spawn(this.x + this.width / 2, this.y, (Math.random() - 0.5) * 30, -30, '#ffffff', 3, 6, 0.2, 200, 'sweat');
+      }
+
+      if (this.y > 800) {
+        this.alive = false;
+      }
+      return;
+    }
+
     this.animTimer += dt * 9;
     this.x += this.panicSpeed * dt;
   }
@@ -77,6 +101,16 @@ export class Civilian {
 
     const renderX = this.x - cameraX;
     const renderY = this.y;
+
+    if (this.isFalling) {
+      ctx.save();
+      ctx.translate(renderX + this.width / 2, renderY + this.height / 2);
+      ctx.rotate(this.fallRotation);
+      ctx.translate(-this.width / 2, -this.height / 2);
+      this.drawChibiCivilian(ctx, false);
+      ctx.restore();
+      return;
+    }
 
     if (this.isBitten) {
       // Shuddering viral infection flash
