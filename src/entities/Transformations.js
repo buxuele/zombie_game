@@ -43,12 +43,6 @@ export const TRANSFORMATION_TYPES = {
     name: '东方神龙',
     color: '#e74c3c',
     duration: 10
-  },
-  BALLOON: {
-    id: 'BALLOON',
-    name: '气球狂欢',
-    color: '#ff4081',
-    duration: 9
   }
 };
 
@@ -155,15 +149,6 @@ export class TransformationManager {
       if (particleSystem && Math.random() > 0.25) {
         particleSystem.spawnDragonSparkle(leader.x + 60 + Math.random() * 80, leader.y);
       }
-    } else if (this.activeType === 'BALLOON') {
-      horde.zombies.forEach((z, idx) => {
-        if (z.alive) {
-          z.grounded = false;
-          const balloonTargetY = 110 + Math.sin(this.wavePhase * 1.5 + idx * 0.8) * 16;
-          z.y += (balloonTargetY - z.y) * Math.min(1, 6 * dt);
-          z.vy = 0;
-        }
-      });
     } else if (this.activeType === 'GIANT_MECH') {
       this.laserTimer += dt;
       if (particleSystem && Math.random() > 0.3) {
@@ -194,8 +179,6 @@ export class TransformationManager {
       this.drawTsunamiWave(ctx, renderX, groundY);
     } else if (this.activeType === 'DRAGON') {
       this.drawDragon(ctx, renderX, leader.y, horde, cameraX);
-    } else if (this.activeType === 'BALLOON') {
-      this.drawBalloons(ctx, horde, cameraX);
     } else if (this.activeType === 'GIANT_MECH') {
       this.drawGiantMech(ctx, renderX, leader.y, groundY);
     } else if (this.activeType === 'UFO') {
@@ -417,40 +400,6 @@ export class TransformationManager {
     ctx.arc(pearlX, pearlY, 13, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
-
-    ctx.restore();
-  }
-
-  drawBalloons(ctx, horde, cameraX) {
-    ctx.save();
-    const colors = ['#ff4081', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6'];
-
-    horde.zombies.forEach((z, i) => {
-      if (!z.alive) return;
-      const zx = z.x - cameraX + z.width / 2;
-      const zy = z.y;
-      const color = colors[i % colors.length];
-
-      // Balloon string
-      ctx.strokeStyle = '#ecf0f1';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(zx, zy);
-      ctx.lineTo(zx, zy - 28);
-      ctx.stroke();
-
-      // Helium Balloon Bulb
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.ellipse(zx, zy - 46, 18, 22, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Balloon Highlight
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-      ctx.beginPath();
-      ctx.ellipse(zx - 6, zy - 52, 4, 8, -0.4, 0, Math.PI * 2);
-      ctx.fill();
-    });
 
     ctx.restore();
   }

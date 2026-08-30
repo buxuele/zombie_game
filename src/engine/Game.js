@@ -222,16 +222,11 @@ export class Game {
     const leader = this.horde.leader;
     if (!leader) return;
 
-    const magnetLevel = storage.getUpgradeLevel('magnetRadius');
-    const hasMagnet = magnetLevel > 1; // Magnet only active when upgraded!
-    const magnetDist = 90 + (magnetLevel - 1) * 45;
-
     const isTsunami = this.transformations.activeType === 'TSUNAMI';
     const isMech = this.transformations.activeType === 'GIANT_MECH';
     const isQuarterback = this.transformations.activeType === 'QUARTERBACK';
     const isGold = this.transformations.activeType === 'GOLD';
     const isDragon = this.transformations.activeType === 'DRAGON';
-    const isBalloon = this.transformations.activeType === 'BALLOON';
     const isFever = this.feverTimer > 0;
 
     // 1. Coins (Physical Touch Collision Required)
