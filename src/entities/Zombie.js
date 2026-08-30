@@ -244,34 +244,7 @@ export class Zombie {
     ctx.scale(this.scaleX * currentScale, this.scaleY * currentScale);
     ctx.rotate(this.bodyTilt);
 
-    if (assets.isLoaded && !isGold && !isNinja && !isQuarterback) {
-      let sprite = null;
-      if (this.isPushing) {
-        sprite = assets.sprites.zombieJump;
-      } else if (!this.grounded) {
-        if (this.isGliding || Math.abs(this.vy) < 80) {
-          sprite = assets.sprites.zombieGlide;
-        } else {
-          sprite = assets.sprites.zombieJump;
-        }
-      } else {
-        if (this.scaleX > 1.15) {
-          sprite = assets.sprites.zombieLand;
-        } else {
-          const frame = Math.floor(((this.runTimer + this.phaseOffset) * 0.9) % 2);
-          sprite = (frame === 0) ? assets.sprites.zombieRun1 : assets.sprites.zombieRun2;
-        }
-      }
-
-      if (sprite) {
-        ctx.drawImage(sprite, -this.width / 2, -this.height, this.width, this.height);
-        this.drawHat(ctx, equippedHat, 0, isQuarterback, isNinja);
-        ctx.restore();
-        return;
-      }
-    }
-
-    // Cute Friendly Zombie Tsunami Chibi Fallback
+    // Cute Friendly Zombie Tsunami Chibi with Kinematic Stride Dynamics
     let skinColor = '#2ecc71';
     let shirtColor = this.shirtColor || '#e74c3c';
     let pantsColor = this.pantsColor || '#2980b9';
@@ -291,30 +264,51 @@ export class Zombie {
 
     const hatToDraw = (equippedHat && equippedHat !== 'none') ? equippedHat : this.accessory;
 
-    let legPhase = 0;
+    // Physics-locked stride angle strictly tied to physical ground displacement (X position)
+    const strideCycle = (this.x / 8.8) + this.phaseOffset;
+    let leg1Angle = 0;
+    let leg2Angle = 0;
+    let leg1Knee = 0;
+    let leg2Knee = 0;
     let bodyBob = 0;
     let armSwing = 0;
 
     if (this.grounded && !this.isFallingInPit) {
-      legPhase = Math.sin(this.runTimer + this.phaseOffset);
-      bodyBob = Math.abs(Math.cos(this.runTimer + this.phaseOffset)) * 4.5;
-      armSwing = Math.sin(this.runTimer * 1.4 + this.phaseOffset) * 6;
+      leg1Angle = Math.sin(strideCycle) * 0.75;
+      leg2Angle = Math.sin(strideCycle + Math.PI) * 0.75;
+      leg1Knee = Math.max(0, -Math.sin(strideCycle - 0.4) * 0.95);
+      leg2Knee = Math.max(0, -Math.sin(strideCycle + Math.PI - 0.4) * 0.95);
+      bodyBob = Math.abs(Math.sin(strideCycle)) * 4.2;
+      armSwing = Math.sin(strideCycle + Math.PI) * 32;
+    } else {
+      // Airborne tucked / leaping legs
+      leg1Angle = -0.5;
+      leg2Angle = 0.6;
+      leg1Knee = 0.4;
+      leg2Knee = 0.2;
+      armSwing = -40;
     }
 
-    // Dynamic High-Stepping Legs (Left & Right legs swing vigorously)
+    // 1. Back Leg (Left Leg)
+    ctx.save();
+    ctx.translate(-5, -16 - bodyBob);
+    ctx.rotate(leg1Angle);
     ctx.fillStyle = pantsColor;
-    const leg1Lift = Math.max(0, -legPhase * 4);
-    const leg2Lift = Math.max(0, legPhase * 4);
-    ctx.fillRect(-7 + legPhase * 6, -12 - leg1Lift, 5, 12);
-    ctx.fillRect(2 - legPhase * 6, -12 - leg2Lift, 5, 12);
+    ctx.fillRect(-2.5, 0, 5, 8); // Thigh
+    ctx.translate(0, 8);
+    ctx.rotate(leg1Knee);
+    ctx.fillRect(-2, 0, 4, 8); // Calf
+    ctx.fillStyle = '#15181e';
+    ctx.fillRect(-2, 6, 7, 3.5); // Shoe
+    ctx.restore();
 
-    // Torso (Vibrant shirt with lively bobbing)
+    // 2. Torso (Vibrant shirt with lively bobbing)
     ctx.fillStyle = shirtColor;
     ctx.beginPath();
     ctx.roundRect(-9, -32 - bodyBob, 18, 20, 5);
     ctx.fill();
 
-    // Cute Round Chibi Head
+    // 3. Cute Round Chibi Head
     ctx.fillStyle = skinColor;
     ctx.beginPath();
     ctx.arc(0, -42 - bodyBob, 16, 0, Math.PI * 2);
@@ -348,7 +342,20 @@ export class Zombie {
     ctx.fillRect(1, -36 - bodyBob, 2.5, 2.5);
     ctx.fillRect(4.5, -36 - bodyBob, 2.5, 2.5);
 
-    // Animated Flailing Zombie Arms (Swinging back and forth)
+    // 4. Front Leg (Right Leg)
+    ctx.save();
+    ctx.translate(4, -16 - bodyBob);
+    ctx.rotate(leg2Angle);
+    ctx.fillStyle = pantsColor;
+    ctx.fillRect(-2.5, 0, 5, 8); // Thigh
+    ctx.translate(0, 8);
+    ctx.rotate(leg2Knee);
+    ctx.fillRect(-2, 0, 4, 8); // Calf
+    ctx.fillStyle = '#15181e';
+    ctx.fillRect(-2, 6, 7, 3.5); // Shoe
+    ctx.restore();
+
+    // 5. Animated Flailing Zombie Arms (Swinging back and forth)
     ctx.fillStyle = skinColor;
     ctx.save();
     ctx.translate(4, -28 - bodyBob);
