@@ -216,6 +216,9 @@ export class LevelGenerator {
   }
 
   draw(ctx, cameraX) {
+    // 1. Draw High-Contrast Deep Abyss Chasms (Pits between platforms)
+    this.drawPitsAndChasms(ctx, cameraX);
+
     for (const plat of this.platforms) {
       const renderX = plat.startX - cameraX;
       const width = plat.endX - plat.startX;
@@ -313,6 +316,9 @@ export class LevelGenerator {
         ctx.fillStyle = '#e59866';
         ctx.fillRect(renderX, this.groundY, width, 6);
       }
+
+      // Draw Industrial Warning Hazard Stripes on Cliff Edges
+      this.drawHazardStripes(ctx, plat, cameraX);
     }
 
     // Draw Manholes
@@ -347,5 +353,105 @@ export class LevelGenerator {
     for (const bomb of this.bombs) bomb.draw(ctx, cameraX);
     for (const civ of this.civilians) civ.draw(ctx, cameraX);
     for (const v of this.vehicles) v.draw(ctx, cameraX);
+  }
+
+  drawPitsAndChasms(ctx, cameraX) {
+    for (let i = 0; i < this.platforms.length - 1; i++) {
+      const p1 = this.platforms[i];
+      const p2 = this.platforms[i + 1];
+      const gapStart = p1.endX;
+      const gapEnd = p2.startX;
+      if (gapEnd <= gapStart) continue;
+
+      const rStart = gapStart - cameraX;
+      const rEnd = gapEnd - cameraX;
+      const gapWidth = gapEnd - gapStart;
+
+      // 1. Abyss Deep Void (Pitch-black deep chasm with glowing bottom danger hue)
+      const chasmGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+      chasmGrad.addColorStop(0, '#000000');
+      chasmGrad.addColorStop(0.3, '#080509');
+      chasmGrad.addColorStop(1, '#800000');
+      ctx.fillStyle = chasmGrad;
+      ctx.fillRect(rStart, this.groundY, gapWidth, 180);
+
+      // 2. Chasm Cliff Walls (Left and Right Vertical Structural Rockfaces)
+      ctx.fillStyle = '#08080c';
+      ctx.fillRect(rStart, this.groundY, 14, 180);
+      ctx.fillRect(rEnd - 14, this.groundY, 14, 180);
+
+      // 3. Danger warning laser glow at bottom of pit
+      ctx.fillStyle = 'rgba(235, 47, 6, 0.35)';
+      ctx.fillRect(rStart, this.groundY + 130, gapWidth, 50);
+
+      ctx.strokeStyle = 'rgba(255, 71, 87, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(rStart, this.groundY + 155);
+      ctx.lineTo(rEnd, this.groundY + 155);
+      ctx.stroke();
+    }
+  }
+
+  drawHazardStripes(ctx, plat, cameraX) {
+    const isLateGameHard = plat.startX > 25000;
+    const stripeWidth = 42;
+    const stripeHeight = 12;
+
+    const yellowColor = isLateGameHard ? '#333333' : '#f1c40f';
+    const blackColor = isLateGameHard ? '#151821' : '#111111';
+
+    // Left cliff edge (end of platform)
+    const rxLeft = plat.endX - stripeWidth - cameraX;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(rxLeft, this.groundY, stripeWidth, stripeHeight);
+    ctx.clip();
+
+    ctx.fillStyle = yellowColor;
+    ctx.fillRect(rxLeft, this.groundY, stripeWidth, stripeHeight);
+    ctx.fillStyle = blackColor;
+    for (let x = rxLeft - 20; x < rxLeft + stripeWidth + 20; x += 14) {
+      ctx.beginPath();
+      ctx.moveTo(x, this.groundY);
+      ctx.lineTo(x + 8, this.groundY);
+      ctx.lineTo(x - 4, this.groundY + stripeHeight);
+      ctx.lineTo(x - 12, this.groundY + stripeHeight);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Right cliff edge (start of platform)
+    const rxRight = plat.startX - cameraX;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(rxRight, this.groundY, stripeWidth, stripeHeight);
+    ctx.clip();
+
+    ctx.fillStyle = yellowColor;
+    ctx.fillRect(rxRight, this.groundY, stripeWidth, stripeHeight);
+    ctx.fillStyle = blackColor;
+    for (let x = rxRight - 20; x < rxRight + stripeWidth + 20; x += 14) {
+      ctx.beginPath();
+      ctx.moveTo(x, this.groundY);
+      ctx.lineTo(x + 8, this.groundY);
+      ctx.lineTo(x - 4, this.groundY + stripeHeight);
+      ctx.lineTo(x - 12, this.groundY + stripeHeight);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // Flashing Hazard LED beacon on cliff corners
+    if (!isLateGameHard) {
+      const now = Date.now() * 0.006;
+      const flash = Math.sin(now) > 0;
+      ctx.fillStyle = flash ? '#ff4757' : '#ffa502';
+      ctx.beginPath();
+      ctx.arc(plat.endX - cameraX - 4, this.groundY + 6, 4, 0, Math.PI * 2);
+      ctx.arc(plat.startX - cameraX + 4, this.groundY + 6, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }

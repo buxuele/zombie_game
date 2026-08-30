@@ -158,30 +158,56 @@ export class Bomb {
     ctx.save();
     ctx.translate(renderX + this.width / 2, renderY + this.height);
 
+    const isLateGameHard = this.x > 25000;
+
     // Bomb Shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
     ctx.beginPath();
-    ctx.ellipse(0, 0, 16, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 18, 5, 0, 0, Math.PI * 2);
     ctx.fill();
 
     if (assets.isLoaded && assets.sprites.bomb) {
       ctx.drawImage(assets.sprites.bomb, -this.width / 2, -this.height, this.width, this.height);
     } else {
-      ctx.fillStyle = '#1e222b';
+      // High-contrast danger body (Bright Crimson Red in early/mid game for high visibility)
+      const bodyColor = isLateGameHard ? '#2c3e50' : '#eb2f06';
+      const stripeColor = isLateGameHard ? '#34495e' : '#f1c40f';
+      const glowColor = isLateGameHard ? 'rgba(0,0,0,0)' : 'rgba(235, 47, 6, 0.35)';
+
+      // Danger Halo Aura
+      if (!isLateGameHard) {
+        ctx.fillStyle = glowColor;
+        ctx.beginPath();
+        ctx.arc(0, -16, 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Bomb spherical body
+      ctx.fillStyle = bodyColor;
       ctx.beginPath();
-      ctx.arc(0, -16, 14, 0, Math.PI * 2);
+      ctx.arc(0, -16, 15, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = '#e74c3c';
-      ctx.lineWidth = 3;
+      // Industrial hazard warning stripe across center
+      ctx.fillStyle = stripeColor;
+      ctx.fillRect(-12, -19, 24, 6);
+
+      // Contrast border
+      ctx.strokeStyle = isLateGameHard ? '#1e272e' : '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -16, 15, 0, Math.PI * 2);
       ctx.stroke();
 
-      ctx.fillStyle = '#7f8c8d';
-      ctx.fillRect(-4, -32, 8, 4);
+      // Bomb Cap
+      ctx.fillStyle = '#2f3542';
+      ctx.fillRect(-5, -34, 10, 5);
 
-      ctx.fillStyle = '#f1c40f';
+      // Flashing Fuse Spark
+      const fuseFlash = Math.sin(this.fuseTimer * 12) > 0;
+      ctx.fillStyle = fuseFlash ? '#ffa502' : '#ff4757';
       ctx.beginPath();
-      ctx.arc(6, -38, 4, 0, Math.PI * 2);
+      ctx.arc(4, -38, 5, 0, Math.PI * 2);
       ctx.fill();
     }
 

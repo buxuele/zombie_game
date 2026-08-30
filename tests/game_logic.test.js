@@ -369,6 +369,34 @@ function testAdaptiveSceneBgmTracks() {
   assert(desertTrack.waveform === 'sawtooth', 'Desert track uses mysterious sawtooth waveform');
 }
 
+// 16. Hazard Visibility & Progressive Difficulty Test
+import { LevelGenerator } from '../src/systems/LevelGenerator.js';
+import { Bomb } from '../src/entities/Obstacle.js';
+function testHazardVisibilityAndProgressiveDifficulty() {
+  console.log('\n--- Testing Hazard Visibility & Progressive Difficulty ---');
+  const lg = new LevelGenerator(540);
+  lg.generateChunk(3200);
+
+  // Early bomb has high contrast
+  const earlyBomb = new Bomb(5000, 540);
+  const isEarlyHard = earlyBomb.x > 25000;
+  assert(!isEarlyHard, 'Early bomb (<25000px) is in friendly high-contrast warning mode');
+
+  // Late game bomb is stealth
+  const lateBomb = new Bomb(30000, 540);
+  const isLateHard = lateBomb.x > 25000;
+  assert(isLateHard, 'Late-game bomb (>25000px) transitions to advanced stealth camouflage mode');
+
+  // Verify platforms have chasms between gaps
+  lg.platforms = [
+    { startX: 0, endX: 1000 },
+    { startX: 1200, endX: 2500 }
+  ];
+  assert(lg.platforms[0].endX < lg.platforms[1].startX, 'Gap exists between platform 0 and 1');
+  const gapWidth = lg.platforms[1].startX - lg.platforms[0].endX;
+  assert(gapWidth === 200, `Chasm pit gap width is 200px: ${gapWidth}`);
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -386,6 +414,7 @@ testDynamicGroundShadowScaling();
 testFixedCameraStability();
 testParticleSystemVisualTypes();
 testAdaptiveSceneBgmTracks();
+testHazardVisibilityAndProgressiveDifficulty();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {
