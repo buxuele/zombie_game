@@ -178,13 +178,7 @@ export class CollisionManager {
 
       // Active crowd pushing / stacking state
       if (v.isPushing) {
-        game.renderer.camera.addTrauma(0.08);
-
-        const blockX = v.x - 42;
-        if (leader.x > blockX) {
-          leader.x = blockX;
-          leader.vx = 0;
-        }
+        game.renderer.camera.addTrauma(0.04);
 
         if (v.pushTimer <= 0) {
           if (v.willSucceed) {
@@ -192,17 +186,19 @@ export class CollisionManager {
             game.handleVehicleReward(v);
             game.activePushVehicle = null;
             game.horde.setPushing(false);
-            logger.vehicle(`全员堆叠合力掀翻 ${v.config.name}! 逃出乘客受到感染!`);
+            logger.vehicle(`全员合力掀翻 ${v.config.name}! 逃出乘客受到感染!`);
           } else {
-            game.timeScale = 0.35;
-            game.slowMoTimer = 0.8;
-            game.horde.zombies.forEach(z => {
-              z.alive = false;
-              game.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
-            });
+            // Front zombie knocked away; remaining horde keeps running
+            const collidingZombie = game.horde.zombies.find(z => z.alive && z.x + z.width >= v.x && z.x <= v.x + 40);
+            if (collidingZombie) {
+              collidingZombie.alive = false;
+              game.particles.spawnAngelGhost(collidingZombie.x + collidingZombie.width / 2, collidingZombie.y);
+            }
+            v.isPushing = false;
             game.activePushVehicle = null;
+            game.horde.setPushing(false);
             audio.playExplosion();
-            logger.collision(`推挤失败, 军团被 ${v.config.name} 碾压覆灭!`);
+            logger.collision(`人数不足 ${hordeCount}/${v.required}, 撞击 ${v.config.name} 损失僵尸!`);
           }
         }
         continue;
@@ -213,36 +209,41 @@ export class CollisionManager {
 
         const roofY = v.y;
         const zombieFeetY = z.y + z.height;
-        const isHorizontallyOver = (z.x + z.width >= v.x - 10 && z.x <= v.x + v.width + 10);
+        const isHorizontallyOver = (z.x + z.width >= v.x && z.x <= v.x + v.width);
 
-        // 1. High Jump Clean Vaulting
-        if (isHorizontallyOver && zombieFeetY < roofY - 14) {
+        // 1. Clean Vaulting over Roof (Airborne jumping)
+        if (isHorizontallyOver && zombieFeetY <= roofY + 8 && z.vy < 0) {
           continue;
         }
 
         // 2. Roof Platform Landing & Running
-        if (isHorizontallyOver && zombieFeetY >= roofY - 14 && zombieFeetY <= roofY + 34 && z.vy >= -120) {
+        if (isHorizontallyOver && zombieFeetY >= roofY - 14 && zombieFeetY <= roofY + 28 && z.vy >= 0) {
           z.standingOnPlatform = true;
           z.land(roofY - z.height, game.particles);
           continue;
         }
 
-        // 3. Vehicle Body Collision & Front Bumper Push
-        if (this.checkAABB(z, v) || (z.x + z.width >= v.x && z.x <= v.x + 30 && zombieFeetY > roofY + 10)) {
-          z.x = Math.min(z.x, v.x - z.width);
-          z.vx = 0;
-
-          if (!v.isPushing) {
-            v.startPushing(canFlip);
-            game.activePushVehicle = v;
-            game.horde.setPushing(true);
-            if (canFlip) {
-              logger.vehicle(`军团满编 ${game.horde.count}/${v.required} 人正在车头前堆积叠罗汉蓄力...`);
-            } else {
-              logger.vehicle(`军团仅有 ${game.horde.count}/${v.required} 人, 正在车前拼死推挤 ${v.config.name}...`);
+        // 3. Vehicle Front Bumper Collision
+        if (z.x + z.width >= v.x && z.x <= v.x + 32 && zombieFeetY > roofY + 12) {
+          if (canFlip) {
+            z.x = Math.min(z.x, v.x - z.width);
+            z.vx = 0;
+            if (!v.isPushing) {
+              v.startPushing(true);
+              v.pushTimer = 0.18; // Quick punchy heave
+              game.activePushVehicle = v;
+              game.horde.setPushing(true);
+              logger.vehicle(`军团满编 ${game.horde.count}/${v.required} 人合力掀翻 ${v.config.name}...`);
             }
+            break;
+          } else {
+            // Insufficient zombies: front zombie knocked out immediately
+            z.alive = false;
+            game.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
+            audio.playPushMetal();
+            logger.collision(`人数不足 ${hordeCount}/${v.required}, 撞击 ${v.config.name} 损失前排僵尸!`);
+            break;
           }
-          break;
         }
       }
     }

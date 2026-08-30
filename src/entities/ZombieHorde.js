@@ -105,6 +105,8 @@ export class ZombieHorde {
 
     if (!leader.isPushing) {
       leader.x += gameSpeed * dt;
+    } else {
+      leader.x += (gameSpeed * 0.35) * dt;
     }
 
     if (isLevitating) {
