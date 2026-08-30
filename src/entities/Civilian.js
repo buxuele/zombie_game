@@ -47,7 +47,6 @@ export class Civilian {
     if (particleSystem) {
       particleSystem.spawnInfectionBurst(this.x + this.width / 2, this.y + this.height / 2);
       particleSystem.spawnCivilianPanic(this.x + this.width / 2, this.y);
-      particleSystem.spawnTransformationSmoke(this.x + this.width / 2, this.groundY);
     }
     if (floatingText) {
       floatingText.spawn(this.x + this.width / 2, this.y - 20, '+1 大脑', '#ff4081', 22);

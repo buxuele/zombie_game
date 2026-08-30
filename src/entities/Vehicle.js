@@ -134,9 +134,6 @@ export class Vehicle {
 
     if (this.isMoving && !this.isPushing && !this.isFlipped) {
       this.x -= this.moveSpeed * dt;
-      if (particleSystem && Math.random() > 0.5) {
-        particleSystem.spawn(this.x + this.width - 5, this.groundY - 12, 30, -10, '#bdc3c7', 4, 12, 0.25, 0, 'smoke');
-      }
     }
 
     if (this.isPushing) {
@@ -159,10 +156,6 @@ export class Vehicle {
       if (particleSystem && this.coinShowerTimer > 0.08) {
         this.coinShowerTimer = 0;
         particleSystem.spawnCoinSparkle(this.x + Math.random() * this.width, this.y + Math.random() * this.height);
-      }
-
-      if (particleSystem && Math.random() > 0.4) {
-        particleSystem.spawn(this.x + this.width / 2, this.y + this.height / 2, -50, -20, '#2b2d35', 10, 24, 0.4, -40, 'smoke');
       }
 
       if (this.y > 900) {

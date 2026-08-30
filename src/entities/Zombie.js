@@ -203,10 +203,6 @@ export class Zombie {
       this.bodyTilt = 0.08 + Math.sin(this.runTimer + this.phaseOffset) * 0.04;
       this.targetScaleX = 1.0;
       this.targetScaleY = 1.0;
-
-      if (particleSystem && Math.random() > 0.88) {
-        particleSystem.spawn(this.x + 8, this.y + this.height, -60, -20, '#d1d8e0', 3, 8, 0.2, 0, 'smoke');
-      }
     }
 
     const lerpSpeed = 16 * dt;

@@ -278,23 +278,23 @@ export class ParticleSystem {
   }
 
   spawnLandingDust(x, y) {
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 3; i++) {
       const angle = (Math.random() * Math.PI) + Math.PI;
-      const speed = 50 + Math.random() * 90;
+      const speed = 30 + Math.random() * 40;
       const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * (speed * 0.5);
-      this.spawn(x + (Math.random() - 0.5) * 18, y, vx, vy, '#e0e6ed', 6, 14, 0.35 + Math.random() * 0.2, -40, 'smoke');
+      const vy = Math.sin(angle) * (speed * 0.4);
+      this.spawn(x + (Math.random() - 0.5) * 12, y, vx, vy, '#e0e6ed', 3, 6, 0.18 + Math.random() * 0.1, -20, 'smoke');
     }
   }
 
   spawnInfectionBurst(x, y) {
-    for (let i = 0; i < 28; i++) {
+    for (let i = 0; i < 8; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 90 + Math.random() * 200;
+      const speed = 70 + Math.random() * 120;
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
       const color = Math.random() > 0.3 ? '#2ecc71' : '#a3e635';
-      this.spawn(x, y, vx, vy, color, 6, 16, 0.45 + Math.random() * 0.3, 100, 'smoke');
+      this.spawn(x, y, vx, vy, color, 4, 1, 0.25 + Math.random() * 0.15, 100, 'spark');
     }
   }
 
@@ -319,27 +319,19 @@ export class ParticleSystem {
   }
 
   spawnVehicleExplosion(x, y) {
-    for (let i = 0; i < 32; i++) {
+    for (let i = 0; i < 4; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 120 + Math.random() * 280;
+      const speed = 60 + Math.random() * 100;
       const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed - 60;
-      const color = Math.random() > 0.4 ? '#f39c12' : '#e74c3c';
-      this.spawn(x, y, vx, vy, color, 14, 30, 0.5 + Math.random() * 0.3, 80, 'smoke');
+      const vy = Math.sin(angle) * speed - 30;
+      this.spawn(x, y, vx, vy, '#f39c12', 6, 12, 0.25 + Math.random() * 0.15, 40, 'smoke');
     }
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 14; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 60 + Math.random() * 160;
-      const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed - 100;
-      this.spawn(x, y, vx, vy, '#2b2d35', 10, 36, 0.7 + Math.random() * 0.4, -60, 'smoke');
-    }
-    for (let i = 0; i < 22; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 180 + Math.random() * 340;
+      const speed = 140 + Math.random() * 220;
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      this.spawn(x, y, vx, vy, '#ffd700', 4, 1, 0.4 + Math.random() * 0.2, 350, 'spark');
+      this.spawn(x, y, vx, vy, '#ffd700', 4, 1, 0.3 + Math.random() * 0.15, 300, 'spark');
     }
   }
 
@@ -348,21 +340,21 @@ export class ParticleSystem {
   }
 
   spawnCoinSparkle(x, y) {
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 8; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 60 + Math.random() * 120;
+      const speed = 50 + Math.random() * 90;
       const vx = Math.cos(angle) * speed;
       const vy = Math.sin(angle) * speed;
-      this.spawn(x, y, vx, vy, '#f1c40f', 5, 1, 0.35 + Math.random() * 0.2, 100, 'spark');
+      this.spawn(x, y, vx, vy, '#f1c40f', 4, 1, 0.25 + Math.random() * 0.15, 100, 'spark');
     }
   }
 
   spawnWaterSplash(x, y) {
-    for (let i = 0; i < 14; i++) {
-      const vx = (Math.random() - 0.2) * 180 + 70;
-      const vy = -Math.random() * 220 - 60;
+    for (let i = 0; i < 8; i++) {
+      const vx = (Math.random() - 0.2) * 140 + 50;
+      const vy = -Math.random() * 180 - 40;
       const color = Math.random() > 0.5 ? '#3498db' : '#85c1e9';
-      this.spawn(x, y, vx, vy, color, 8, 20, 0.45 + Math.random() * 0.3, 350, 'smoke');
+      this.spawn(x, y, vx, vy, color, 5, 12, 0.3 + Math.random() * 0.2, 350, 'foam');
     }
   }
 
@@ -394,46 +386,43 @@ export class ParticleSystem {
 
   spawnCivilianPanic(x, y) {
     // Sweat drops flying left and right
-    for (let i = 0; i < 4; i++) {
-      const vx = (Math.random() > 0.5 ? 1 : -1) * (60 + Math.random() * 80);
-      const vy = -80 - Math.random() * 60;
-      this.spawn(x + (Math.random() - 0.5) * 16, y - 30, vx, vy, '#3498db', 5, 2, 0.45, 380, 'sweat');
+    for (let i = 0; i < 3; i++) {
+      const vx = (Math.random() > 0.5 ? 1 : -1) * (50 + Math.random() * 60);
+      const vy = -70 - Math.random() * 50;
+      this.spawn(x + (Math.random() - 0.5) * 16, y - 30, vx, vy, '#3498db', 4, 2, 0.35, 380, 'sweat');
     }
   }
 
   spawnTransformationSmoke(x, y) {
-    // Fluffy comic smoke puff on transformation / infection
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 4; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 40 + Math.random() * 100;
+      const speed = 30 + Math.random() * 60;
       const vx = Math.cos(angle) * speed;
-      const vy = Math.sin(angle) * speed - 20;
+      const vy = Math.sin(angle) * speed - 15;
       const color = Math.random() > 0.4 ? '#ffffff' : '#2ecc71';
-      this.spawn(x, y - 20, vx, vy, color, 8, 24, 0.4 + Math.random() * 0.25, -20, 'smoke');
+      this.spawn(x, y - 15, vx, vy, color, 5, 12, 0.25 + Math.random() * 0.15, -10, 'smoke');
     }
   }
 
   spawnWaterFoam(x, y) {
-    for (let i = 0; i < 6; i++) {
-      const vx = (Math.random() - 0.5) * 120;
-      const vy = -40 - Math.random() * 80;
-      this.spawn(x + (Math.random() - 0.5) * 40, y, vx, vy, '#ffffff', 6, 14, 0.35 + Math.random() * 0.2, 50, 'foam');
+    for (let i = 0; i < 4; i++) {
+      const vx = (Math.random() - 0.5) * 100;
+      const vy = -30 - Math.random() * 60;
+      this.spawn(x + (Math.random() - 0.5) * 30, y, vx, vy, '#ffffff', 4, 10, 0.25 + Math.random() * 0.15, 50, 'foam');
     }
   }
 
   spawnDragonSparkle(x, y) {
-    for (let i = 0; i < 3; i++) {
-      const vx = -80 - Math.random() * 60;
-      const vy = (Math.random() - 0.5) * 60;
-      this.spawn(x + (Math.random() - 0.5) * 20, y + (Math.random() - 0.5) * 20, vx, vy, '#f1c40f', 6, 1, 0.4 + Math.random() * 0.3, 0, 'dragonSparkle');
+    for (let i = 0; i < 2; i++) {
+      const vx = -70 - Math.random() * 50;
+      const vy = (Math.random() - 0.5) * 50;
+      this.spawn(x + (Math.random() - 0.5) * 16, y + (Math.random() - 0.5) * 16, vx, vy, '#f1c40f', 5, 1, 0.3 + Math.random() * 0.2, 0, 'dragonSparkle');
     }
   }
 
   spawnMechExhaust(x, y) {
-    // Dark diesel smoke puff with ember
-    this.spawn(x, y, -100 - Math.random() * 50, -40 + (Math.random() - 0.5) * 30, '#2c3e50', 8, 22, 0.45, -30, 'smoke');
-    if (Math.random() > 0.5) {
-      this.spawn(x, y, -80, -20, '#e67e22', 4, 1, 0.25, 100, 'spark');
+    if (Math.random() > 0.7) {
+      this.spawn(x, y, -60, -15, '#e67e22', 3, 1, 0.18, 100, 'spark');
     }
   }
 
