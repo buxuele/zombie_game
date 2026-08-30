@@ -409,6 +409,16 @@ function testVehicleGroundContact() {
   assert(tank.y + tank.height === groundY, `Tank bottom aligns strictly with groundY 540: ${tank.y + tank.height}`);
 }
 
+// 18. Early Game Car Density & Runway Pacing Test
+function testEarlyCarDensity() {
+  console.log('\n--- Testing Early Game Car Density & Pacing ---');
+  const lg = new LevelGenerator(540);
+  const carsInRunway = lg.vehicles.filter(v => v.config.type === 'CAR');
+  assert(carsInRunway.length >= 2, `Early runway contains at least 2 cars for early flips: ${carsInRunway.length}`);
+  const totalVehiclesInRunway = lg.vehicles.length;
+  assert(totalVehiclesInRunway >= 3, `Total vehicles in early runway is at least 3: ${totalVehiclesInRunway}`);
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -428,6 +438,7 @@ testParticleSystemVisualTypes();
 testAdaptiveSceneBgmTracks();
 testHazardVisibilityAndProgressiveDifficulty();
 testVehicleGroundContact();
+testEarlyCarDensity();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

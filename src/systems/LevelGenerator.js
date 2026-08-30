@@ -76,30 +76,36 @@ export class LevelGenerator {
     this.generatedDistance = 3200;
 
     // Warmup runway
-    this.civilians.push(new Civilian(500, this.groundY));
-    this.civilians.push(new Civilian(550, this.groundY));
+    this.civilians.push(new Civilian(480, this.groundY));
+    this.civilians.push(new Civilian(530, this.groundY));
 
     // Comfortable reachable jump arc of coins
     for (let i = 0; i < 6; i++) {
       const arc = Math.sin((i / 5) * Math.PI) * 45;
-      this.coins.push(new Coin(700 + i * 36, this.groundY - 45 - arc));
+      this.coins.push(new Coin(680 + i * 36, this.groundY - 45 - arc));
     }
 
-    this.civilians.push(new Civilian(1050, this.groundY));
-    this.civilians.push(new Civilian(1100, this.groundY));
+    this.civilians.push(new Civilian(960, this.groundY));
+    this.civilians.push(new Civilian(1010, this.groundY));
     
-    this.mysteryBoxes.push(new MysteryBox(1300, this.groundY - 80));
-    this.vehicles.push(new Vehicle(1650, this.groundY, 'CAR'));
+    // First Car encounter: friendly 4-zombie push opportunity
+    this.vehicles.push(new Vehicle(1180, this.groundY, 'CAR'));
 
-    this.brains.push(new BrainCollectible(1900, this.groundY - 80));
+    this.mysteryBoxes.push(new MysteryBox(1440, this.groundY - 80));
+
+    this.civilians.push(new Civilian(1620, this.groundY));
+    this.vehicles.push(new Vehicle(1820, this.groundY, 'CAR'));
+
+    this.brains.push(new BrainCollectible(2060, this.groundY - 80));
 
     for (let i = 0; i < 8; i++) {
       const arc = Math.sin((i / 7) * Math.PI) * 45;
-      this.coins.push(new Coin(2100 + i * 32, this.groundY - 45 - arc));
+      this.coins.push(new Coin(2240 + i * 32, this.groundY - 45 - arc));
     }
 
-    this.civilians.push(new Civilian(2450, this.groundY));
-    this.vehicles.push(new Vehicle(2700, this.groundY, 'BUS'));
+    this.civilians.push(new Civilian(2600, this.groundY));
+    this.civilians.push(new Civilian(2650, this.groundY));
+    this.vehicles.push(new Vehicle(2850, this.groundY, 'BUS'));
   }
 
   isGroundAt(worldX) {
@@ -163,24 +169,33 @@ export class LevelGenerator {
     while (cursorX < actualEnd - 280) {
       const roll = Math.random();
 
-      if (roll < 0.30) {
+      if (roll < 0.28) {
         const groupSize = 1 + Math.floor(Math.random() * 3);
         for (let i = 0; i < groupSize; i++) {
           this.civilians.push(new Civilian(cursorX + i * 42, this.groundY));
         }
         cursorX += groupSize * 42 + 180;
-      } else if (roll < 0.55) {
+      } else if (roll < 0.62) {
+        // Vehicles: plentiful small cars in early game (cursorX < 7000px)
         const vehicleRoll = Math.random();
         let vType = 'CAR';
-        let isMoving = (cursorX > 4500 && Math.random() > 0.6);
+        let isMoving = (cursorX > 4000 && Math.random() > 0.55);
 
         if (cursorX > 8000 && vehicleRoll > 0.8) vType = 'AIRPLANE';
         else if (cursorX > 5500 && vehicleRoll > 0.55) vType = 'TANK';
-        else if (cursorX > 3200 && vehicleRoll > 0.35) vType = 'BUS';
+        else if (cursorX > 3200 && vehicleRoll > 0.40) vType = 'BUS';
+        else vType = 'CAR';
 
         this.vehicles.push(new Vehicle(cursorX, this.groundY, vType, isMoving));
-        cursorX += 420;
-      } else if (roll < 0.75) {
+
+        // Occasionally spawn an extra car shortly after in early-to-mid zones for combo flips
+        if (cursorX < 7000 && Math.random() > 0.65) {
+          this.vehicles.push(new Vehicle(cursorX + 240, this.groundY, 'CAR', false));
+          cursorX += 240;
+        }
+
+        cursorX += 380;
+      } else if (roll < 0.78) {
         // Reachable smooth coin waves
         const count = 6 + Math.floor(Math.random() * 6);
         for (let i = 0; i < count; i++) {
@@ -189,10 +204,10 @@ export class LevelGenerator {
           this.coins.push(new Coin(coinX, this.groundY - 45 - arc));
         }
         cursorX += count * 36 + 140;
-      } else if (roll < 0.86) {
+      } else if (roll < 0.88) {
         this.mysteryBoxes.push(new MysteryBox(cursorX, this.groundY - 80));
         cursorX += 300;
-      } else if (roll < 0.93 && cursorX > 3500) {
+      } else if (roll < 0.94 && cursorX > 3500) {
         this.bombs.push(new Bomb(cursorX, this.groundY));
         cursorX += 320;
       } else {
