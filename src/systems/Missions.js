@@ -10,7 +10,7 @@ export class MissionsUI {
   render() {
     this.container.innerHTML = '';
     const missions = storage.getMissionProgress();
-    const totalBrains = storage.data.brains || 0;
+    const totalBrains = storage.data.totalBrains || 0;
 
     // Brain Trophy Milestone Showcase Header
     const trophyHeader = document.createElement('div');
@@ -23,13 +23,13 @@ export class MissionsUI {
 
     trophyHeader.innerHTML = `
       <div>
-        <div style="font-weight: 700; color: #ffffff; font-size: 15px;">🏆 大脑里程碑奖杯: <span style="color: #ff4081;">${trophyStage}</span></div>
+        <div style="font-weight: 700; color: #ffffff; font-size: 15px;">大脑里程碑奖杯: <span style="color: #ff4081;">${trophyStage}</span></div>
         <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">累计捕获大脑: ${totalBrains} / ${nextTarget} (${trophyPercent}%)</div>
         <div class="mission-progress-bar" style="margin-top: 8px; width: 260px;">
           <div class="mission-progress-fill" style="width: ${trophyPercent}%; background: #ff4081;"></div>
         </div>
       </div>
-      <div style="font-size: 32px;">🧠</div>
+      <div style="font-size: 14px; color: #ff4081; font-weight: 700;">BRAIN TROPHY</div>
     `;
     this.container.appendChild(trophyHeader);
 

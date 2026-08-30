@@ -119,7 +119,7 @@ export class CollisionManager {
     const isGold = game.transformations.activeType === 'GOLD';
     const isTsunami = game.transformations.activeType === 'TSUNAMI';
     const isQuarterback = game.transformations.activeType === 'QUARTERBACK';
-    const isMech = game.transformations.activeType === 'MECH';
+    const isMech = game.transformations.activeType === 'GIANT_MECH';
     const isDragon = game.transformations.activeType === 'DRAGON';
     const hasSuperPower = isMech || isDragon || isTsunami || isGold || isQuarterback || isFever;
 
@@ -227,7 +227,7 @@ export class CollisionManager {
 
     const isTsunami = game.transformations.activeType === 'TSUNAMI';
     const isQuarterback = game.transformations.activeType === 'QUARTERBACK';
-    const isMech = game.transformations.activeType === 'MECH';
+    const isMech = game.transformations.activeType === 'GIANT_MECH';
 
     for (const bomb of game.level.bombs) {
       if (!bomb.alive) continue;
