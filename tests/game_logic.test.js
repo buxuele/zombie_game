@@ -437,6 +437,23 @@ function testCivilianAbyssFallPhysics() {
   assert(civ.y > 540 - 48, 'Civilian y position increases downwards into the abyss');
 }
 
+// 20. CollisionManager & GameConfig Refactoring Invariant Test
+import { CollisionManager } from '../src/systems/CollisionManager.js';
+import { GAME_CONFIG } from '../src/config/GameConfig.js';
+function testCollisionManagerModule() {
+  console.log('\n--- Testing CollisionManager & GameConfig Module ---');
+  assert(GAME_CONFIG.CANVAS_WIDTH === 1280, 'GAME_CONFIG contains CANVAS_WIDTH 1280');
+  assert(GAME_CONFIG.GROUND_Y === 540, 'GAME_CONFIG contains GROUND_Y 540');
+  assert(GAME_CONFIG.GRAVITY === 800, 'GAME_CONFIG contains GRAVITY 800');
+
+  // AABB tests
+  const b1 = { x: 100, y: 100, width: 50, height: 50 };
+  const b2 = { x: 120, y: 120, width: 50, height: 50 };
+  const b3 = { x: 300, y: 300, width: 50, height: 50 };
+  assert(CollisionManager.checkAABB(b1, b2) === true, 'CollisionManager detects overlapping boxes');
+  assert(CollisionManager.checkAABB(b1, b3) === false, 'CollisionManager detects separated boxes');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -458,6 +475,7 @@ testHazardVisibilityAndProgressiveDifficulty();
 testVehicleGroundContact();
 testEarlyCarDensity();
 testCivilianAbyssFallPhysics();
+testCollisionManagerModule();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

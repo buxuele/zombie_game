@@ -9,6 +9,8 @@ import { storage } from '../systems/Storage.js';
 import { audio } from './Audio.js';
 import { logger } from '../systems/Logger.js';
 import { biomeManager } from '../systems/BiomeManager.js';
+import { CollisionManager } from '../systems/CollisionManager.js';
+import { GAME_CONFIG } from '../config/GameConfig.js';
 
 export class Game {
   constructor(canvas, callbacks = {}) {
@@ -19,7 +21,7 @@ export class Game {
     this.particles = new ParticleSystem();
     this.floatingText = new FloatingTextManager();
     this.transformations = new TransformationManager();
-    this.level = new LevelGenerator(540);
+    this.level = new LevelGenerator(GAME_CONFIG.GROUND_Y);
 
     this.isRunning = false;
     this.isPaused = false;
@@ -28,8 +30,8 @@ export class Game {
     this.slowMoTimer = 0;
 
     // Arcade floaty gravity & soaring jump impulse
-    this.gravity = 800;
-    this.jumpImpulse = 480;
+    this.gravity = GAME_CONFIG.GRAVITY;
+    this.jumpImpulse = GAME_CONFIG.JUMP_FORCE;
 
     this.initialSpeed = 190;
     this.gameSpeed = 190;
@@ -226,261 +228,13 @@ export class Game {
     const leader = this.horde.leader;
     if (!leader) return;
 
-    const isTsunami = this.transformations.activeType === 'TSUNAMI';
-    const isMech = this.transformations.activeType === 'GIANT_MECH';
-    const isQuarterback = this.transformations.activeType === 'QUARTERBACK';
-    const isGold = this.transformations.activeType === 'GOLD';
-    const isDragon = this.transformations.activeType === 'DRAGON';
-    const isFever = this.feverTimer > 0;
-
-    // 1. Coins (Physical Touch Collision Required)
-    for (const coin of this.level.coins) {
-      if (!coin.alive) continue;
-      coin.update(dt);
-
-      for (const z of this.horde.zombies) {
-        if (z.alive && this.checkAABB(z, coin)) {
-          coin.collect(this.particles, this.floatingText);
-          this.sessionCoins += 1;
-          storage.addCoins(1);
-          storage.updateMission('coins_collected', 1);
-
-          this.particles.spawnCurrencyAura(coin.x, coin.y, 'coin');
-
-          this.particles.spawnFlyingCurrency(coin.x, coin.y, 'coin', () => {
-            if (this.callbacks.onCurrencyPunch) this.callbacks.onCurrencyPunch('coin');
-          });
-          break;
-        }
-      }
-    }
-
-    // 2. Brains (Physical Touch Collision Required)
-    for (const brain of this.level.brains) {
-      if (!brain.alive) continue;
-      brain.update(dt);
-
-      for (const z of this.horde.zombies) {
-        if (z.alive && this.checkAABB(z, brain)) {
-          brain.collect(this.particles, this.floatingText);
-          this.sessionBrains += 1;
-          storage.addBrains(1);
-          logger.info('高空跳跃物理触碰收集到粉色大脑');
-
-          this.particles.spawnCurrencyAura(brain.x, brain.y, 'brain');
-
-          this.particles.spawnFlyingCurrency(brain.x, brain.y, 'brain', () => {
-            if (this.callbacks.onCurrencyPunch) this.callbacks.onCurrencyPunch('brain');
-          });
-          break;
-        }
-      }
-    }
-
-    // 3. Mystery Boxes (Physical Jump Bump required!)
-    for (const box of this.level.mysteryBoxes) {
-      if (!box.alive) continue;
-      box.update(dt);
-
-      for (const z of this.horde.zombies) {
-        if (z.alive && this.checkAABB(z, box)) {
-          box.collect(this.particles, this.floatingText);
-          const durationLevel = storage.getUpgradeLevel('transformDuration');
-          this.transformations.activateRandom(durationLevel, this.floatingText);
-          storage.updateMission('transforms_used', 1);
-          logger.info(`跳跃顶开宝箱, 触发超能变身: ${this.transformations.currentDef.name}`);
-          break;
-        }
-      }
-    }
-
-    // 4. Civilians
-    for (const civ of this.level.civilians) {
-      if (!civ.alive || civ.isBitten) continue;
-
-      if (isGold && Math.abs(leader.x - civ.x) < 90) {
-        civ.alive = false;
-        this.particles.spawnCoinSparkle(civ.x + 15, civ.y + 20);
-        this.sessionCoins += 5;
-        storage.addCoins(5);
-        this.floatingText.spawn(civ.x + 15, civ.y - 15, '+5 金币', '#f1c40f', 20);
-        logger.info('黄金狂潮将平民转化为金币');
-        continue;
-      }
-
-      if ((isTsunami && civ.x < leader.x + 320) || (isMech && civ.x > leader.x && civ.x < leader.x + 900) || (isDragon && civ.x < leader.x + 280)) {
-        civ.bite(this.particles, this.floatingText, this.horde);
-        this.sessionBrains += 1;
-        storage.addBrains(1);
-        storage.updateMission('civilians_eaten', 1);
-
-        this.feverCombo++;
-        if (this.feverCombo >= 8) {
-          this.feverTimer = 5.0;
-          this.feverCombo = 0;
-          audio.playFever();
-          this.floatingText.spawn(leader.x + 40, leader.y - 40, '狂热暴走 FEVER!', '#f1c40f', 32, 1.5);
-          this.renderer.camera.addTrauma(0.5);
-        }
-        continue;
-      }
-
-      for (const z of this.horde.zombies) {
-        if (z.alive && this.checkAABB(z, civ)) {
-          civ.bite(this.particles, this.floatingText, this.horde);
-          this.sessionBrains += 1;
-          storage.addBrains(1);
-          storage.updateMission('civilians_eaten', 1);
-
-          this.feverCombo++;
-          if (this.feverCombo >= 8) {
-            this.feverTimer = 5.0;
-            this.feverCombo = 0;
-            audio.playFever();
-            this.floatingText.spawn(leader.x + 40, leader.y - 40, '狂热暴走 FEVER!', '#f1c40f', 32, 1.5);
-            this.renderer.camera.addTrauma(0.5);
-          }
-
-          logger.info(`咬中并感染平民, 军团扩充至: ${this.horde.count + 1} 人`);
-          break;
-        }
-      }
-    }
-
-    // 5. Vehicles Platforming & Crowd Stacking Heave-Flip
-    for (const v of this.level.vehicles) {
-      if (!v.alive) continue;
-      v.update(dt, this.particles, this.level);
-
-      if (v.isFlipped) continue;
-
-      if ((isMech && v.x > leader.x && v.x < leader.x + 900) || (isDragon && v.x < leader.x + 280) || isFever) {
-        v.flip(this.gameSpeed, this.particles, this.floatingText, this.renderer.camera, this.level);
-        this.handleVehicleReward(v);
-        this.activePushVehicle = null;
-        this.horde.setPushing(false);
-        continue;
-      }
-
-      if (isTsunami && v.x < leader.x + 320) {
-        v.flip(this.gameSpeed, this.particles, this.floatingText, this.renderer.camera, this.level);
-        this.handleVehicleReward(v);
-        this.activePushVehicle = null;
-        this.horde.setPushing(false);
-        continue;
-      }
-
-      if (isGold && this.checkAABB(leader, v)) {
-        v.flip(this.gameSpeed, this.particles, this.floatingText, this.renderer.camera, this.level);
-        this.sessionCoins += v.config.coins * 2;
-        storage.addCoins(v.config.coins * 2);
-        this.sessionFlippedVehicles += 1;
-        storage.updateMission('cars_flipped', 1);
-        this.activePushVehicle = null;
-        this.horde.setPushing(false);
-        continue;
-      }
-
-      const hordeCount = this.horde.count;
-      const canFlip = hordeCount >= v.required || isQuarterback;
-
-      // Processing active crowd pushing / stacking state
-      if (v.isPushing) {
-        this.renderer.camera.addTrauma(0.08);
-
-        // Hard physical block: lock zombies in front of vehicle during push struggle
-        const blockX = v.x - 42;
-        if (leader.x > blockX) {
-          leader.x = blockX;
-          leader.vx = 0;
-        }
-
-        if (v.pushTimer <= 0) {
-          if (v.willSucceed) {
-            // Collective heave-flip with full crowd roar!
-            v.flip(this.gameSpeed, this.particles, this.floatingText, this.renderer.camera, this.level);
-            this.handleVehicleReward(v);
-            this.activePushVehicle = null;
-            this.horde.setPushing(false);
-            logger.vehicle(`全员堆叠合力掀翻 ${v.config.name}! 逃出乘客受到感染!`);
-          } else {
-            // Under-crewed crush in slow motion
-            this.timeScale = 0.35;
-            this.slowMoTimer = 0.8;
-            this.horde.zombies.forEach(z => {
-              z.alive = false;
-              this.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
-            });
-            this.activePushVehicle = null;
-            audio.playExplosion();
-            logger.collision(`推挤失败, 军团被 ${v.config.name} 碾压覆灭!`);
-          }
-        }
-        continue;
-      }
-
-      for (const z of this.horde.zombies) {
-        if (!z.alive) continue;
-
-        const roofY = v.y;
-        const zombieFeetY = z.y + z.height;
-        const isHorizontallyOver = (z.x + z.width >= v.x - 10 && z.x <= v.x + v.width + 10);
-
-        // 1. High Jump Clean Vaulting: If zombie is leaping comfortably above vehicle roof, let it fly cleanly over!
-        if (isHorizontallyOver && zombieFeetY < roofY - 14) {
-          continue;
-        }
-
-        // 2. Roof Platform Landing & Running: Land onto vehicle roof (Car, Bus, Tank, Airplane)
-        if (isHorizontallyOver && zombieFeetY >= roofY - 14 && zombieFeetY <= roofY + 34 && z.vy >= -120) {
-          z.standingOnPlatform = true;
-          z.land(roofY - z.height, this.particles);
-          continue;
-        }
-
-        // 3. Vehicle Body Collision & Front Bumper Push:
-        if (this.checkAABB(z, v) || (z.x + z.width >= v.x && z.x <= v.x + 30 && zombieFeetY > roofY + 10)) {
-          // Hard physical stop at front bumper
-          z.x = Math.min(z.x, v.x - z.width);
-          z.vx = 0;
-
-          if (!v.isPushing) {
-            v.startPushing(canFlip);
-            this.activePushVehicle = v;
-            this.horde.setPushing(true);
-            if (canFlip) {
-              logger.vehicle(`军团满编 ${this.horde.count}/${v.required} 人正在车头前堆积叠罗汉蓄力...`);
-            } else {
-              logger.vehicle(`军团仅有 ${this.horde.count}/${v.required} 人, 正在车前拼死推挤 ${v.config.name}...`);
-            }
-          }
-          break;
-        }
-      }
-    }
-
-    // 6. Bombs
-    for (const bomb of this.level.bombs) {
-      if (!bomb.alive) continue;
-      bomb.update(dt, this.particles);
-
-      if ((isMech && bomb.x > leader.x && bomb.x < leader.x + 900) || (isTsunami && bomb.x < leader.x + 320)) {
-        bomb.explode(this.particles, this.floatingText, this.renderer.camera);
-        continue;
-      }
-
-      for (const z of this.horde.zombies) {
-        if (z.alive && this.checkAABB(z, bomb)) {
-          bomb.explode(this.particles, this.floatingText, this.renderer.camera);
-          if (!isQuarterback && !isTsunami) {
-            z.alive = false;
-            this.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
-            logger.collision(`触碰地雷引爆! 损失僵尸, 剩余: ${this.horde.count} 人`);
-          }
-          break;
-        }
-      }
-    }
+    // Process Game Entities & Physics Collisions via CollisionManager
+    CollisionManager.handleCoins(this);
+    CollisionManager.handleBrains(this);
+    CollisionManager.handleMysteryBoxes(this, dt);
+    CollisionManager.handleCivilians(this);
+    CollisionManager.handleVehicles(this, dt);
+    CollisionManager.handleBombs(this, dt);
   }
 
   handleVehicleReward(v) {

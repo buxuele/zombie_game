@@ -2,6 +2,7 @@ import { Vehicle } from '../entities/Vehicle.js';
 import { Civilian } from '../entities/Civilian.js';
 import { Coin, BrainCollectible, Bomb, MysteryBox } from '../entities/Obstacle.js';
 import { biomeManager } from './BiomeManager.js';
+import { GAME_CONFIG } from '../config/GameConfig.js';
 
 export class WarningBarrier {
   constructor(x, groundY) {
@@ -37,7 +38,7 @@ export class WarningBarrier {
 }
 
 export class LevelGenerator {
-  constructor(groundY = 540) {
+  constructor(groundY = GAME_CONFIG.GROUND_Y) {
     this.groundY = groundY;
     this.platforms = [];
     this.vehicles = [];
