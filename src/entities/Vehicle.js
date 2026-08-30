@@ -244,24 +244,24 @@ export class Vehicle {
       ctx.fillStyle = '#85c1e9';
       ctx.fillRect(ox + 50, oy + 4, 40, 14);
 
-      this.drawWheel(ctx, ox + 25, oy + h);
-      this.drawWheel(ctx, ox + w - 25, oy + h);
+      this.drawWheel(ctx, ox + 25, oy + h - 10);
+      this.drawWheel(ctx, ox + w - 25, oy + h - 10);
     } else if (c.type === 'BUS') {
       ctx.fillStyle = c.color;
       ctx.beginPath();
-      ctx.roundRect(ox, oy, w, h, 8);
+      ctx.roundRect(ox, oy, w, h - 8, 8);
       ctx.fill();
 
       ctx.fillStyle = '#15181e';
-      ctx.fillRect(ox, oy + h - 25, w, 6);
+      ctx.fillRect(ox, oy + h - 30, w, 6);
 
       ctx.fillStyle = '#85c1e9';
       for (let i = 0; i < 5; i++) {
-        ctx.fillRect(ox + 18 + i * 36, oy + 12, 26, 22);
+        ctx.fillRect(ox + 18 + i * 36, oy + 10, 26, 22);
       }
 
-      this.drawWheel(ctx, ox + 40, oy + h);
-      this.drawWheel(ctx, ox + w - 45, oy + h);
+      this.drawWheel(ctx, ox + 40, oy + h - 10);
+      this.drawWheel(ctx, ox + w - 45, oy + h - 10);
     } else if (c.type === 'TANK') {
       ctx.fillStyle = c.color;
       ctx.beginPath();
@@ -293,20 +293,20 @@ export class Vehicle {
       ctx.closePath();
       ctx.fill();
 
-      this.drawWheel(ctx, ox + w * 0.45, oy + h);
-      this.drawWheel(ctx, ox + w * 0.75, oy + h);
+      this.drawWheel(ctx, ox + w * 0.45, oy + h - 10);
+      this.drawWheel(ctx, ox + w * 0.75, oy + h - 10);
     }
   }
 
   drawWheel(ctx, x, y) {
     ctx.fillStyle = '#1e222b';
     ctx.beginPath();
-    ctx.arc(x, y, 12, 0, Math.PI * 2);
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = '#7f8c8d';
     ctx.beginPath();
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
     ctx.fill();
   }
 

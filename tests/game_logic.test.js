@@ -397,6 +397,18 @@ function testHazardVisibilityAndProgressiveDifficulty() {
   assert(gapWidth === 200, `Chasm pit gap width is 200px: ${gapWidth}`);
 }
 
+// 17. Vehicle Tire Ground Contact Invariant Test
+function testVehicleGroundContact() {
+  console.log('\n--- Testing Vehicle Tire Ground Contact Invariant ---');
+  const groundY = 540;
+  const bus = new Vehicle(1000, groundY, 'BUS');
+  assert(bus.y + bus.height === groundY, `Bus bottom aligns strictly with groundY 540: ${bus.y + bus.height}`);
+  const car = new Vehicle(1500, groundY, 'CAR');
+  assert(car.y + car.height === groundY, `Car bottom aligns strictly with groundY 540: ${car.y + car.height}`);
+  const tank = new Vehicle(2000, groundY, 'TANK');
+  assert(tank.y + tank.height === groundY, `Tank bottom aligns strictly with groundY 540: ${tank.y + tank.height}`);
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -415,6 +427,7 @@ testFixedCameraStability();
 testParticleSystemVisualTypes();
 testAdaptiveSceneBgmTracks();
 testHazardVisibilityAndProgressiveDifficulty();
+testVehicleGroundContact();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

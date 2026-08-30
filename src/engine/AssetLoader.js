@@ -165,13 +165,48 @@ export class AssetLoader {
     return canvas;
   }
 
+  autoTrimCanvas(sourceCanvas) {
+    const ctx = sourceCanvas.getContext('2d');
+    const width = sourceCanvas.width;
+    const height = sourceCanvas.height;
+    const imgData = ctx.getImageData(0, 0, width, height);
+    const data = imgData.data;
+
+    let minX = width, minY = height, maxX = 0, maxY = 0;
+    let found = false;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const alpha = data[(y * width + x) * 4 + 3];
+        if (alpha > 20) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+          found = true;
+        }
+      }
+    }
+
+    if (!found) return sourceCanvas;
+
+    const trimmedW = Math.max(1, maxX - minX + 1);
+    const trimmedH = Math.max(1, maxY - minY + 1);
+    const trimmedCanvas = document.createElement('canvas');
+    trimmedCanvas.width = trimmedW;
+    trimmedCanvas.height = trimmedH;
+    const trimmedCtx = trimmedCanvas.getContext('2d');
+    trimmedCtx.drawImage(sourceCanvas, minX, minY, trimmedW, trimmedH, 0, 0, trimmedW, trimmedH);
+    return trimmedCanvas;
+  }
+
   extractSprite(sourceCanvas, sx, sy, sw, sh) {
     const spriteCanvas = document.createElement('canvas');
     spriteCanvas.width = Math.max(1, Math.floor(sw));
     spriteCanvas.height = Math.max(1, Math.floor(sh));
     const ctx = spriteCanvas.getContext('2d');
     ctx.drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, spriteCanvas.width, spriteCanvas.height);
-    return spriteCanvas;
+    return this.autoTrimCanvas(spriteCanvas);
   }
 }
 
