@@ -169,21 +169,21 @@ export class CollisionManager {
         const isHorizontallyOver = (z.x + z.width >= v.x && z.x <= v.x + v.width);
 
         // 1. Clean Vaulting over Roof (Airborne jumping above vehicle roof)
-        if (isHorizontallyOver && zombieFeetY <= roofY + 8 && z.vy < 0) {
+        if (isHorizontallyOver && zombieFeetY <= roofY + 18 && z.vy < 0) {
           continue;
         }
 
         // 2. Roof Platform Landing & Running (Walking on top of vehicle roof)
-        if (isHorizontallyOver && zombieFeetY >= roofY - 14 && zombieFeetY <= roofY + 28 && z.vy >= 0) {
+        if (isHorizontallyOver && zombieFeetY >= roofY - 18 && zombieFeetY <= roofY + 32 && z.vy >= -60) {
           z.standingOnPlatform = true;
           z.land(roofY - z.height, game.particles);
           continue;
         }
 
-        // 3. Physical Contact Collision (Direct touch on bumper / vehicle body)
+        // 3. Physical Contact Collision (Direct touch on lower bumper / vehicle body)
         const isDirectTouch = (
-          this.checkAABB(z, v) ||
-          (z.x + z.width >= v.x && z.x <= v.x + 36 && zombieFeetY > roofY + 12)
+          this.checkAABB(z, v) &&
+          zombieFeetY > roofY + 20
         );
 
         if (isDirectTouch) {
