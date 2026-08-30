@@ -256,8 +256,6 @@ export class Renderer {
       ambientColor = 'rgba(41, 128, 185, 0.22)';
     } else if (transformType === 'DRAGON') {
       ambientColor = 'rgba(192, 57, 43, 0.22)';
-    } else if (transformType === 'GIANT_MECH') {
-      ambientColor = 'rgba(192, 57, 43, 0.20)';
     } else if (transformType === 'GOLD') {
       ambientColor = 'rgba(241, 196, 15, 0.18)';
     } else if (transformType === 'NINJA') {

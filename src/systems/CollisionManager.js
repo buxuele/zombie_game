@@ -118,9 +118,8 @@ export class CollisionManager {
     const isGold = game.transformations.activeType === 'GOLD';
     const isTsunami = game.transformations.activeType === 'TSUNAMI';
     const isQuarterback = game.transformations.activeType === 'QUARTERBACK';
-    const isMech = game.transformations.activeType === 'GIANT_MECH';
     const isDragon = game.transformations.activeType === 'DRAGON';
-    const hasSuperPower = isMech || isDragon || isTsunami || isGold || isQuarterback;
+    const hasSuperPower = isDragon || isTsunami || isGold || isQuarterback;
 
     for (const v of game.level.vehicles) {
       if (!v.alive) continue;
@@ -230,7 +229,6 @@ export class CollisionManager {
 
     const isTsunami = game.transformations.activeType === 'TSUNAMI';
     const isQuarterback = game.transformations.activeType === 'QUARTERBACK';
-    const isMech = game.transformations.activeType === 'GIANT_MECH';
 
     for (const bomb of game.level.bombs) {
       if (!bomb.alive) continue;
@@ -239,7 +237,7 @@ export class CollisionManager {
       for (const z of game.horde.zombies) {
         if (z.alive && this.checkAABB(z, bomb)) {
           bomb.explode(game.particles, game.floatingText, game.renderer.camera);
-          if (!isQuarterback && !isTsunami && !isMech) {
+          if (!isQuarterback && !isTsunami) {
             z.alive = false;
             game.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
             logger.collision(`触碰地雷引爆! 损失僵尸, 剩余: ${game.horde.count} 人`);

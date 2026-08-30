@@ -420,12 +420,6 @@ export class ParticleSystem {
     }
   }
 
-  spawnMechExhaust(x, y) {
-    if (Math.random() > 0.7) {
-      this.spawn(x, y, -60, -15, '#e67e22', 3, 1, 0.18, 100, 'spark');
-    }
-  }
-
   spawnCurrencyAura(x, y, type = 'coin') {
     const color = type === 'coin' ? '#f1c40f' : '#ff4081';
     this.spawn(x, y, 0, 0, color, 6, 90, 0.32, 0, 'shockwave');

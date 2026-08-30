@@ -8,12 +8,6 @@ export const TRANSFORMATION_TYPES = {
     color: '#3498db',
     duration: 10
   },
-  GIANT_MECH: {
-    id: 'GIANT_MECH',
-    name: '巨型机甲',
-    color: '#e74c3c',
-    duration: 9
-  },
   NINJA: {
     id: 'NINJA',
     name: '暗影武士',
@@ -149,19 +143,6 @@ export class TransformationManager {
       if (particleSystem && Math.random() > 0.25) {
         particleSystem.spawnDragonSparkle(leader.x + 60 + Math.random() * 80, leader.y);
       }
-    } else if (this.activeType === 'GIANT_MECH') {
-      this.laserTimer += dt;
-      if (particleSystem && Math.random() > 0.3) {
-        particleSystem.spawnMechExhaust(leader.x - 20, groundY - 195);
-      }
-      if (this.laserTimer >= 0.12) {
-        this.laserTimer = 0;
-        audio.playLaser();
-        if (camera) camera.addTrauma(0.2);
-        if (particleSystem) {
-          particleSystem.spawnLaserSparks(leader.x + 800, groundY - 165);
-        }
-      }
     } else if (this.activeType === 'NINJA') {
       this.ninjaSlashTimer += dt;
     }
@@ -179,8 +160,6 @@ export class TransformationManager {
       this.drawTsunamiWave(ctx, renderX, groundY);
     } else if (this.activeType === 'DRAGON') {
       this.drawDragon(ctx, renderX, leader.y, horde, cameraX);
-    } else if (this.activeType === 'GIANT_MECH') {
-      this.drawGiantMech(ctx, renderX, leader.y, groundY);
     } else if (this.activeType === 'UFO') {
       this.drawUFO(ctx, renderX, leader.y);
     }
@@ -483,79 +462,6 @@ export class TransformationManager {
       ctx.arc(fx, fy, 4 + (i % 3) * 2, 0, Math.PI * 2);
       ctx.fill();
     }
-
-    ctx.restore();
-  }
-
-  drawGiantMech(ctx, renderX, leaderY, groundY) {
-    ctx.save();
-    const mechX = renderX + 40;
-    const mechY = groundY - 140;
-    const stepBob = Math.sin(this.wavePhase * 3) * 6;
-
-    // 1. Shoulder Dual Exhaust Smokestacks
-    ctx.fillStyle = '#1e272e';
-    ctx.fillRect(mechX - 28, mechY - 65, 10, 20);
-    ctx.fillRect(mechX + 18, mechY - 65, 10, 20);
-
-    // Exhaust Pipe Metal Lips
-    ctx.fillStyle = '#718093';
-    ctx.fillRect(mechX - 30, mechY - 68, 14, 4);
-    ctx.fillRect(mechX + 16, mechY - 68, 14, 4);
-
-    // 2. Heavy Armored Torso Chassis
-    ctx.fillStyle = '#2c3e50';
-    ctx.beginPath();
-    ctx.roundRect(mechX - 34, mechY - 50 + stepBob, 68, 90, 8);
-    ctx.fill();
-    ctx.strokeStyle = '#e74c3c';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Chest Hazard Warning Stripes
-    ctx.fillStyle = '#f1c40f';
-    ctx.fillRect(mechX - 22, mechY - 15 + stepBob, 44, 18);
-    ctx.fillStyle = '#15181e';
-    for (let i = -20; i < 20; i += 10) {
-      ctx.beginPath();
-      ctx.moveTo(mechX + i, mechY - 15 + stepBob);
-      ctx.lineTo(mechX + i + 6, mechY - 15 + stepBob);
-      ctx.lineTo(mechX + i, mechY + 3 + stepBob);
-      ctx.lineTo(mechX + i - 6, mechY + 3 + stepBob);
-      ctx.closePath();
-      ctx.fill();
-    }
-
-    // 3. Pulsing Chest Laser Reactor Sphere
-    const corePulse = 10 + Math.sin(this.wavePhase * 4) * 3;
-    ctx.fillStyle = '#ff0055';
-    ctx.shadowColor = '#ff0055';
-    ctx.shadowBlur = 25;
-    ctx.beginPath();
-    ctx.arc(mechX + 22, mechY - 32 + stepBob, corePulse, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Laser Reactor Core Inner Bright Star
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(mechX + 22, mechY - 32 + stepBob, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 4. Laser Beam Blast with Core & Energy Ripples
-    ctx.lineWidth = 18 + Math.sin(this.wavePhase * 3) * 6;
-    ctx.strokeStyle = 'rgba(255, 0, 85, 0.85)';
-    ctx.beginPath();
-    ctx.moveTo(mechX + 28, mechY - 32 + stepBob);
-    ctx.lineTo(mechX + 1100, mechY - 32 + stepBob);
-    ctx.stroke();
-
-    // High-Voltage White Plasma Center Beam
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.moveTo(mechX + 28, mechY - 32 + stepBob);
-    ctx.lineTo(mechX + 1100, mechY - 32 + stepBob);
-    ctx.stroke();
 
     ctx.restore();
   }
