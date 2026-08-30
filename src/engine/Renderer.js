@@ -100,16 +100,20 @@ export class Renderer {
     }
   }
 
-  // Non-repeating High-Res Progressive Panoramic Window (Framed to Road Baseline with Procedural Shapes)
+  // Non-repeating High-Res Progressive Panoramic Window (Bottom Aligned to Road Baseline)
   drawPanoramicBackground(img, progress, biomeType = 'CITY') {
     if (img && img.complete && img.naturalWidth > 0) {
-      // Fit precisely to the road top baseline (Y=0 to 540) so the entire bottom landscape is 100% visible
-      const drawH = 540;
-      const drawW = drawH * (img.naturalWidth / img.naturalHeight);
+      // Scale to comfortably fill and pan across the viewport
+      const panScale = 1.35;
+      const drawW = Math.max(this.width * panScale, (540 * img.naturalWidth) / img.naturalHeight);
+      const drawH = drawW * (img.naturalHeight / img.naturalWidth);
       const maxScrollX = Math.max(0, drawW - this.width);
       const clampedProg = Math.max(0, Math.min(1, progress));
       const renderX = -clampedProg * maxScrollX;
-      const renderY = 0;
+
+      // Align image BOTTOM precisely with groundY = 540
+      // So the entire bottom landscape (street level / ground / shoreline) sits cleanly above the road
+      const renderY = 540 - drawH;
 
       // Draw single full-bleed continuous panoramic image
       this.ctx.drawImage(img, renderX, renderY, drawW, drawH);
@@ -117,82 +121,6 @@ export class Renderer {
       // High-End Flat Cartoon Vector Procedural Fallback (Clean, Zero AI artifact, Crisp Art)
       this.drawProceduralVectorBackground(progress * 1000, biomeType);
     }
-
-    // Procedural Ground Transition Shapes at base (Y=440 to 540)
-    this.drawProceduralGroundTransition(progress * 800, biomeType);
-  }
-
-  drawProceduralGroundTransition(offset, biomeType) {
-    this.ctx.save();
-
-    if (biomeType === 'CITY' || biomeType === 'CYBER') {
-      // Multi-layered urban silhouettes sitting right above the road
-      const segW = 400;
-      const startX = -(offset % segW);
-      this.ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-      for (let x = startX - segW; x < this.width + segW; x += segW) {
-        this.ctx.fillRect(x + 20, 480, 50, 60);
-        this.ctx.fillRect(x + 85, 450, 65, 90);
-        this.ctx.fillRect(x + 165, 490, 45, 50);
-        this.ctx.fillRect(x + 225, 440, 80, 100);
-        this.ctx.fillRect(x + 320, 475, 55, 65);
-
-        // Subtle warm lit window accents
-        this.ctx.fillStyle = 'rgba(251, 191, 36, 0.45)';
-        this.ctx.fillRect(x + 100, 465, 8, 10);
-        this.ctx.fillRect(x + 120, 465, 8, 10);
-        this.ctx.fillRect(x + 245, 455, 10, 12);
-        this.ctx.fillRect(x + 270, 455, 10, 12);
-        this.ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-      }
-    } else if (biomeType === 'BEACH' || biomeType === 'SUNSET') {
-      // Coastal horizon gradient & gentle wave contour shapes
-      const waveGrad = this.ctx.createLinearGradient(0, 480, 0, 540);
-      waveGrad.addColorStop(0, 'rgba(14, 116, 144, 0.35)');
-      waveGrad.addColorStop(1, 'rgba(6, 182, 212, 0.75)');
-      this.ctx.fillStyle = waveGrad;
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, 540);
-      const waveStep = 60;
-      for (let x = 0; x <= this.width + waveStep; x += waveStep) {
-        const wy = 510 + Math.sin((x + offset) * 0.02) * 12;
-        this.ctx.lineTo(x, wy);
-      }
-      this.ctx.lineTo(this.width, 540);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Foam Crest line
-      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      for (let x = 0; x <= this.width + waveStep; x += waveStep) {
-        const wy = 510 + Math.sin((x + offset) * 0.02) * 12;
-        if (x === 0) this.ctx.moveTo(x, wy);
-        else this.ctx.lineTo(x, wy);
-      }
-      this.ctx.stroke();
-    } else {
-      // Warm desert / forest rolling dune slope shapes
-      const duneGrad = this.ctx.createLinearGradient(0, 460, 0, 540);
-      duneGrad.addColorStop(0, 'rgba(120, 53, 15, 0.4)');
-      duneGrad.addColorStop(1, 'rgba(180, 83, 9, 0.8)');
-      this.ctx.fillStyle = duneGrad;
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, 540);
-      const duneStep = 80;
-      for (let x = 0; x <= this.width + duneStep; x += duneStep) {
-        const dy = 490 + Math.cos((x + offset * 0.7) * 0.015) * 18;
-        this.ctx.lineTo(x, dy);
-      }
-      this.ctx.lineTo(this.width, 540);
-      this.ctx.closePath();
-      this.ctx.fill();
-    }
-
-    this.ctx.restore();
   }
 
   drawProceduralVectorBackground(offset, biomeType) {
@@ -408,40 +336,6 @@ export class Renderer {
       this.ctx.lineTo(lightOriginX + beamDir * beamLength, lightOriginY + 45);
       this.ctx.lineTo(lightOriginX, lightOriginY + 12);
       this.ctx.closePath();
-      this.ctx.fill();
-    }
-    this.ctx.restore();
-  }
-
-  drawStreetlightCones(cameraX) {
-    this.ctx.save();
-    const lampSpacing = 680;
-    const startIdx = Math.floor((cameraX - 200) / lampSpacing);
-    const endIdx = Math.ceil((cameraX + this.width + 200) / lampSpacing);
-
-    for (let i = startIdx; i <= endIdx; i++) {
-      const lampX = i * lampSpacing - cameraX;
-      const lampTopY = 320;
-      const roadY = 540;
-
-      // Volumetric soft warm down-cone
-      const coneGrad = this.ctx.createLinearGradient(lampX, lampTopY, lampX, roadY);
-      coneGrad.addColorStop(0, 'rgba(253, 224, 71, 0.14)');
-      coneGrad.addColorStop(0.7, 'rgba(254, 240, 138, 0.08)');
-      coneGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
-
-      this.ctx.fillStyle = coneGrad;
-      this.ctx.beginPath();
-      this.ctx.moveTo(lampX, lampTopY);
-      this.ctx.lineTo(lampX - 110, roadY);
-      this.ctx.lineTo(lampX + 110, roadY);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Streetlamp bulb glow
-      this.ctx.fillStyle = '#fef08a';
-      this.ctx.beginPath();
-      this.ctx.arc(lampX, lampTopY, 4, 0, Math.PI * 2);
       this.ctx.fill();
     }
     this.ctx.restore();

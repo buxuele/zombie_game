@@ -517,8 +517,7 @@ export class Game {
     this.renderer.drawBackground(cameraX);
     this.level.draw(this.renderer.ctx, cameraX);
 
-    // Dynamic environmental light cones
-    this.renderer.drawStreetlightCones(cameraX);
+    // Vehicle Headlights
     this.renderer.drawVehicleHeadlights(this.level.vehicles, cameraX);
 
     const isGold = this.transformations.activeType === 'GOLD';
