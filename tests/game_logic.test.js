@@ -454,6 +454,35 @@ function testCollisionManagerModule() {
   assert(CollisionManager.checkAABB(b1, b3) === false, 'CollisionManager detects separated boxes');
 }
 
+// 21. Distant Vehicle No Auto-Flip Invariant Test
+function testDistantVehicleNoAutoFlip() {
+  console.log('\n--- Testing Distant Vehicle No Auto-Flip Invariant ---');
+  const fakeGame = {
+    horde: {
+      leader: { x: 200, y: 492, width: 34, height: 48 },
+      zombies: [{ alive: true, x: 200, y: 492, width: 34, height: 48 }],
+      count: 12,
+      setPushing: () => {}
+    },
+    transformations: { activeType: 'TSUNAMI' },
+    feverTimer: 5.0,
+    gameSpeed: 200,
+    level: {
+      vehicles: [
+        new Vehicle(1500, 540, 'BUS') // Distant vehicle 1300px away
+      ]
+    },
+    particles: null,
+    floatingText: null,
+    renderer: { camera: { addTrauma: () => {} } }
+  };
+
+  const distantBus = fakeGame.level.vehicles[0];
+  CollisionManager.handleVehicles(fakeGame, 1 / 60);
+  assert(distantBus.isFlipped === false, 'Distant bus (1300px away) is NOT flipped even during Tsunami / Fever mode');
+  assert(distantBus.isPushing === false, 'Distant bus is not in pushing state');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -476,6 +505,7 @@ testVehicleGroundContact();
 testEarlyCarDensity();
 testCivilianAbyssFallPhysics();
 testCollisionManagerModule();
+testDistantVehicleNoAutoFlip();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

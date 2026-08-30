@@ -73,45 +73,27 @@ export class CollisionManager {
     if (!leader) return;
 
     const isGold = game.transformations.activeType === 'GOLD';
-    const isTsunami = game.transformations.activeType === 'TSUNAMI';
-    const isMech = game.transformations.activeType === 'MECH';
-    const isDragon = game.transformations.activeType === 'DRAGON';
 
     for (const civ of game.level.civilians) {
       if (!civ.alive || civ.isBitten) continue;
 
-      if (isGold && Math.abs(leader.x - civ.x) < 90) {
-        civ.alive = false;
-        game.particles.spawnCoinSparkle(civ.x + 15, civ.y + 20);
-        game.sessionCoins += 5;
-        storage.addCoins(5);
-        game.floatingText.spawn(civ.x + 15, civ.y - 15, '+5 金币', '#f1c40f', 20);
-        logger.info('黄金狂潮将平民转化为金币');
-        continue;
-      }
-
-      const isAreaSwept =
-        (isTsunami && civ.x < leader.x + 320) ||
-        (isMech && civ.x > leader.x && civ.x < leader.x + 900) ||
-        (isDragon && civ.x < leader.x + 280);
-
-      if (isAreaSwept) {
-        civ.bite(game.particles, game.floatingText, game.horde);
-        game.sessionBrains += 1;
-        storage.addBrains(1);
-        storage.updateMission('civilians_eaten', 1);
-        this.triggerFeverCombo(game, leader);
-        continue;
-      }
-
       for (const z of game.horde.zombies) {
         if (z.alive && this.checkAABB(z, civ)) {
-          civ.bite(game.particles, game.floatingText, game.horde);
-          game.sessionBrains += 1;
-          storage.addBrains(1);
-          storage.updateMission('civilians_eaten', 1);
-          this.triggerFeverCombo(game, leader);
-          logger.info(`咬中并感染平民, 军团扩充至: ${game.horde.count + 1} 人`);
+          if (isGold) {
+            civ.alive = false;
+            game.particles.spawnCoinSparkle(civ.x + 15, civ.y + 20);
+            game.sessionCoins += 5;
+            storage.addCoins(5);
+            game.floatingText.spawn(civ.x + 15, civ.y - 15, '+5 金币', '#f1c40f', 20);
+            logger.info('黄金狂潮将平民转化为金币');
+          } else {
+            civ.bite(game.particles, game.floatingText, game.horde);
+            game.sessionBrains += 1;
+            storage.addBrains(1);
+            storage.updateMission('civilians_eaten', 1);
+            this.triggerFeverCombo(game, leader);
+            logger.info(`咬中并感染平民, 军团扩充至: ${game.horde.count + 1} 人`);
+          }
           break;
         }
       }
@@ -139,6 +121,7 @@ export class CollisionManager {
     const isQuarterback = game.transformations.activeType === 'QUARTERBACK';
     const isMech = game.transformations.activeType === 'MECH';
     const isDragon = game.transformations.activeType === 'DRAGON';
+    const hasSuperPower = isMech || isDragon || isTsunami || isGold || isQuarterback || isFever;
 
     for (const v of game.level.vehicles) {
       if (!v.alive) continue;
@@ -146,35 +129,8 @@ export class CollisionManager {
 
       if (v.isFlipped) continue;
 
-      if ((isMech && v.x > leader.x && v.x < leader.x + 900) || (isDragon && v.x < leader.x + 280) || isFever) {
-        v.flip(game.gameSpeed, game.particles, game.floatingText, game.renderer.camera, game.level);
-        game.handleVehicleReward(v);
-        game.activePushVehicle = null;
-        game.horde.setPushing(false);
-        continue;
-      }
-
-      if (isTsunami && v.x < leader.x + 320) {
-        v.flip(game.gameSpeed, game.particles, game.floatingText, game.renderer.camera, game.level);
-        game.handleVehicleReward(v);
-        game.activePushVehicle = null;
-        game.horde.setPushing(false);
-        continue;
-      }
-
-      if (isGold && this.checkAABB(leader, v)) {
-        v.flip(game.gameSpeed, game.particles, game.floatingText, game.renderer.camera, game.level);
-        game.sessionCoins += v.config.coins * 2;
-        storage.addCoins(v.config.coins * 2);
-        game.sessionFlippedVehicles += 1;
-        storage.updateMission('cars_flipped', 1);
-        game.activePushVehicle = null;
-        game.horde.setPushing(false);
-        continue;
-      }
-
       const hordeCount = game.horde.count;
-      const canFlip = hordeCount >= v.required || isQuarterback;
+      const canFlip = hordeCount >= v.required || hasSuperPower;
 
       // Active crowd pushing / stacking state
       if (v.isPushing) {
@@ -188,7 +144,6 @@ export class CollisionManager {
             game.horde.setPushing(false);
             logger.vehicle(`全员合力掀翻 ${v.config.name}! 逃出乘客受到感染!`);
           } else {
-            // Front zombie knocked away; remaining horde keeps running
             const collidingZombie = game.horde.zombies.find(z => z.alive && z.x + z.width >= v.x && z.x <= v.x + 40);
             if (collidingZombie) {
               collidingZombie.alive = false;
@@ -211,21 +166,38 @@ export class CollisionManager {
         const zombieFeetY = z.y + z.height;
         const isHorizontallyOver = (z.x + z.width >= v.x && z.x <= v.x + v.width);
 
-        // 1. Clean Vaulting over Roof (Airborne jumping)
+        // 1. Clean Vaulting over Roof (Airborne jumping above vehicle roof)
         if (isHorizontallyOver && zombieFeetY <= roofY + 8 && z.vy < 0) {
           continue;
         }
 
-        // 2. Roof Platform Landing & Running
+        // 2. Roof Platform Landing & Running (Walking on top of vehicle roof)
         if (isHorizontallyOver && zombieFeetY >= roofY - 14 && zombieFeetY <= roofY + 28 && z.vy >= 0) {
           z.standingOnPlatform = true;
           z.land(roofY - z.height, game.particles);
           continue;
         }
 
-        // 3. Vehicle Front Bumper Collision
-        if (z.x + z.width >= v.x && z.x <= v.x + 32 && zombieFeetY > roofY + 12) {
-          if (canFlip) {
+        // 3. Physical Contact Collision (Direct touch on bumper / vehicle body)
+        const isDirectTouch = (
+          this.checkAABB(z, v) ||
+          (z.x + z.width >= v.x && z.x <= v.x + 36 && zombieFeetY > roofY + 12)
+        );
+
+        if (isDirectTouch) {
+          if (hasSuperPower) {
+            // Super transformation powers flip vehicle instantly on physical contact
+            v.flip(game.gameSpeed, game.particles, game.floatingText, game.renderer.camera, game.level);
+            if (isGold) {
+              game.sessionCoins += v.config.coins * 2;
+              storage.addCoins(v.config.coins * 2);
+            } else {
+              game.handleVehicleReward(v);
+            }
+            game.activePushVehicle = null;
+            game.horde.setPushing(false);
+            break;
+          } else if (canFlip) {
             z.x = Math.min(z.x, v.x - z.width);
             z.vx = 0;
             if (!v.isPushing) {
@@ -237,7 +209,7 @@ export class CollisionManager {
             }
             break;
           } else {
-            // Insufficient zombies: front zombie knocked out immediately
+            // Insufficient zombies: front zombie knocked out on direct collision
             z.alive = false;
             game.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
             audio.playPushMetal();
@@ -261,15 +233,10 @@ export class CollisionManager {
       if (!bomb.alive) continue;
       bomb.update(dt, game.particles);
 
-      if ((isMech && bomb.x > leader.x && bomb.x < leader.x + 900) || (isTsunami && bomb.x < leader.x + 320)) {
-        bomb.explode(game.particles, game.floatingText, game.renderer.camera);
-        continue;
-      }
-
       for (const z of game.horde.zombies) {
         if (z.alive && this.checkAABB(z, bomb)) {
           bomb.explode(game.particles, game.floatingText, game.renderer.camera);
-          if (!isQuarterback && !isTsunami) {
+          if (!isQuarterback && !isTsunami && !isMech) {
             z.alive = false;
             game.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
             logger.collision(`触碰地雷引爆! 损失僵尸, 剩余: ${game.horde.count} 人`);
