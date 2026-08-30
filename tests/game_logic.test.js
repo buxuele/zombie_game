@@ -525,6 +525,51 @@ function testStrictTankRequiredThreshold() {
   assert(zombiesList[0].alive === false, 'Colliding front zombie is knocked out upon striking heavy tank with insufficient count');
 }
 
+// 24. Bomb Multi-Casualty Radius Explosion Test (1-3 Zombies)
+function testBombMultiCasualtyRadius() {
+  console.log('\n--- Testing Bomb Multi-Casualty Radius Explosion ---');
+  const zombiesList = [
+    new Zombie(0, 200, 540 - 54), // Direct collision (x=200)
+    new Zombie(1, 150, 540 - 54), // Nearby blast range (dist ~60px)
+    new Zombie(2, 80, 540 - 54),  // Outer shockwave range (dist ~130px)
+    new Zombie(3, -100, 540 - 54) // Far outside blast range (dist >300px)
+  ];
+
+  const fakeGame = {
+    horde: {
+      leader: zombiesList[0],
+      zombies: zombiesList,
+      get count() {
+        return this.zombies.filter(z => z.alive).length;
+      }
+    },
+    transformations: { activeType: null },
+    level: {
+      bombs: [
+        new Bomb(210, 540)
+      ]
+    },
+    particles: {
+      spawnBombExplosion: () => {},
+      spawnAngelGhost: () => {}
+    },
+    floatingText: {
+      spawn: () => {}
+    },
+    renderer: { camera: { addTrauma: () => {} } }
+  };
+
+  const bomb = fakeGame.level.bombs[0];
+  assert(bomb.alive === true, 'Bomb starts active');
+  CollisionManager.handleBombs(fakeGame, 1 / 60);
+  assert(bomb.alive === false, 'Bomb detonated on contact');
+  assert(zombiesList[0].alive === false, 'Direct colliding zombie 0 killed');
+  assert(zombiesList[1].alive === false, 'Nearby zombie 1 killed in blast range');
+  assert(zombiesList[2].alive === false, 'Outer zombie 2 killed in shockwave range');
+  assert(zombiesList[3].alive === true, 'Distant zombie 3 strictly survived outside range');
+  assert(fakeGame.horde.count === 1, 'Horde count reduced from 4 to 1 (3 casualties)');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -549,6 +594,7 @@ testCivilianAbyssFallPhysics();
 testCollisionManagerModule();
 testDistantVehicleNoAutoFlip();
 testStrictTankRequiredThreshold();
+testBombMultiCasualtyRadius();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

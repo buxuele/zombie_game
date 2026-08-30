@@ -211,20 +211,61 @@ export class CollisionManager {
 
     const isTsunami = game.transformations.activeType === 'TSUNAMI';
     const isQuarterback = game.transformations.activeType === 'QUARTERBACK';
+    const isDragon = game.transformations.activeType === 'DRAGON';
+    const isNinja = game.transformations.activeType === 'NINJA';
+    const isInvulnerable = isQuarterback || isTsunami || isDragon || isNinja;
 
     for (const bomb of game.level.bombs) {
       if (!bomb.alive) continue;
       bomb.update(dt, game.particles);
 
+      let triggered = false;
       for (const z of game.horde.zombies) {
         if (z.alive && this.checkAABB(z, bomb)) {
-          bomb.explode(game.particles, game.floatingText, game.renderer.camera);
-          if (!isQuarterback && !isTsunami) {
+          triggered = true;
+          break;
+        }
+      }
+
+      if (triggered) {
+        bomb.explode(game.particles, game.floatingText, game.renderer.camera);
+
+        if (!isInvulnerable) {
+          const bombCenterX = bomb.x + bomb.width / 2;
+          const bombCenterY = bomb.y + bomb.height / 2;
+
+          const livingZombies = game.horde.zombies
+            .filter(z => z.alive)
+            .map(z => {
+              const zx = z.x + z.width / 2;
+              const zy = z.y + z.height / 2;
+              const dist = Math.hypot(zx - bombCenterX, zy - bombCenterY);
+              return { zombie: z, dist };
+            })
+            .sort((a, b) => a.dist - b.dist);
+
+          const victims = [];
+          for (const item of livingZombies) {
+            if (victims.length >= 3) break;
+            if (victims.length === 0) {
+              victims.push(item.zombie);
+            } else if (victims.length === 1 && item.dist <= 140) {
+              victims.push(item.zombie);
+            } else if (victims.length === 2 && item.dist <= 210) {
+              victims.push(item.zombie);
+            }
+          }
+
+          for (const z of victims) {
             z.alive = false;
             game.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
-            logger.collision(`触碰地雷引爆! 损失僵尸, 剩余: ${game.horde.count} 人`);
           }
-          break;
+
+          if (game.floatingText) {
+            game.floatingText.spawn(bombCenterX, bomb.y - 30, `-${victims.length} 僵尸`, '#ff4757', 24);
+          }
+
+          logger.collision(`触碰地雷引爆! 范围波及损失 ${victims.length} 名僵尸, 剩余军团: ${game.horde.count} 人`);
         }
       }
     }
