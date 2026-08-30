@@ -483,6 +483,43 @@ function testDistantVehicleNoAutoFlip() {
   assert(distantBus.isPushing === false, 'Distant bus is not in pushing state');
 }
 
+// 22. Strict Tank & Vehicle Required Zombie Threshold Invariant Test
+function testStrictTankRequiredThreshold() {
+  console.log('\n--- Testing Strict Tank & Vehicle Required Zombie Threshold ---');
+  // Horde with 3 zombies hitting a Tank (requires 12)
+  const zombiesList = [
+    { alive: true, x: 200, y: 492, width: 46, height: 48 },
+    { alive: true, x: 170, y: 492, width: 46, height: 48 },
+    { alive: true, x: 140, y: 492, width: 46, height: 48 }
+  ];
+
+  const fakeGame = {
+    horde: {
+      leader: zombiesList[0],
+      zombies: zombiesList,
+      count: 3,
+      setPushing: () => {}
+    },
+    transformations: { activeType: null },
+    feverTimer: 5.0, // Even during fever
+    gameSpeed: 200,
+    level: {
+      vehicles: [
+        new Vehicle(210, 540, 'TANK') // In direct physical contact
+      ]
+    },
+    particles: { spawnAngelGhost: () => {} },
+    floatingText: null,
+    renderer: { camera: { addTrauma: () => {} } }
+  };
+
+  const tank = fakeGame.level.vehicles[0];
+  assert(tank.required === 12, 'Tank requires 12 zombies to flip');
+  CollisionManager.handleVehicles(fakeGame, 1 / 60);
+  assert(tank.isFlipped === false, 'Tank is STRICTLY NOT flipped when horde count (3) is less than required (12)');
+  assert(zombiesList[0].alive === false, 'Colliding front zombie is knocked out upon striking heavy tank with insufficient count');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -506,6 +543,7 @@ testEarlyCarDensity();
 testCivilianAbyssFallPhysics();
 testCollisionManagerModule();
 testDistantVehicleNoAutoFlip();
+testStrictTankRequiredThreshold();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

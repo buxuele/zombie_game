@@ -115,13 +115,12 @@ export class CollisionManager {
     const leader = game.horde.leader;
     if (!leader) return;
 
-    const isFever = game.feverTimer > 0;
     const isGold = game.transformations.activeType === 'GOLD';
     const isTsunami = game.transformations.activeType === 'TSUNAMI';
     const isQuarterback = game.transformations.activeType === 'QUARTERBACK';
     const isMech = game.transformations.activeType === 'GIANT_MECH';
     const isDragon = game.transformations.activeType === 'DRAGON';
-    const hasSuperPower = isMech || isDragon || isTsunami || isGold || isQuarterback || isFever;
+    const hasSuperPower = isMech || isDragon || isTsunami || isGold || isQuarterback;
 
     for (const v of game.level.vehicles) {
       if (!v.alive) continue;
@@ -130,19 +129,21 @@ export class CollisionManager {
       if (v.isFlipped) continue;
 
       const hordeCount = game.horde.count;
-      const canFlip = hordeCount >= v.required || hasSuperPower;
 
       // Active crowd pushing / stacking state
       if (v.isPushing) {
         game.renderer.camera.addTrauma(0.04);
 
         if (v.pushTimer <= 0) {
-          if (v.willSucceed) {
+          const currentCount = game.horde.count;
+          const isEligibleToFlip = (currentCount >= v.required) || hasSuperPower;
+
+          if (v.willSucceed && isEligibleToFlip) {
             v.flip(game.gameSpeed, game.particles, game.floatingText, game.renderer.camera, game.level);
             game.handleVehicleReward(v);
             game.activePushVehicle = null;
             game.horde.setPushing(false);
-            logger.vehicle(`全员合力掀翻 ${v.config.name}! 逃出乘客受到感染!`);
+            logger.vehicle(`全员满编 ${currentCount}/${v.required} 人合力掀翻 ${v.config.name}! 逃出乘客受到感染!`);
           } else {
             const collidingZombie = game.horde.zombies.find(z => z.alive && z.x + z.width >= v.x && z.x <= v.x + 40);
             if (collidingZombie) {
@@ -150,10 +151,11 @@ export class CollisionManager {
               game.particles.spawnAngelGhost(collidingZombie.x + collidingZombie.width / 2, collidingZombie.y);
             }
             v.isPushing = false;
+            v.willSucceed = false;
             game.activePushVehicle = null;
             game.horde.setPushing(false);
             audio.playExplosion();
-            logger.collision(`人数不足 ${hordeCount}/${v.required}, 撞击 ${v.config.name} 损失僵尸!`);
+            logger.collision(`人数不足 ${currentCount}/${v.required}, 撞击 ${v.config.name} 损失僵尸!`);
           }
         }
         continue;
@@ -186,7 +188,7 @@ export class CollisionManager {
 
         if (isDirectTouch) {
           if (hasSuperPower) {
-            // Super transformation powers flip vehicle instantly on physical contact
+            // Super transformation powers (Tsunami/Mech/Dragon/Quarterback/Gold) destroy vehicle on physical contact
             v.flip(game.gameSpeed, game.particles, game.floatingText, game.renderer.camera, game.level);
             if (isGold) {
               game.sessionCoins += v.config.coins * 2;
@@ -197,7 +199,8 @@ export class CollisionManager {
             game.activePushVehicle = null;
             game.horde.setPushing(false);
             break;
-          } else if (canFlip) {
+          } else if (hordeCount >= v.required) {
+            // Strict headcount required: Car (4), Bus (8), Tank (12), Airplane (16)
             z.x = Math.min(z.x, v.x - z.width);
             z.vx = 0;
             if (!v.isPushing) {
@@ -205,11 +208,11 @@ export class CollisionManager {
               v.pushTimer = 0.18; // Quick punchy heave
               game.activePushVehicle = v;
               game.horde.setPushing(true);
-              logger.vehicle(`军团满编 ${game.horde.count}/${v.required} 人合力掀翻 ${v.config.name}...`);
+              logger.vehicle(`军团满编 ${hordeCount}/${v.required} 人合力掀翻 ${v.config.name}...`);
             }
             break;
           } else {
-            // Insufficient zombies: front zombie knocked out on direct collision
+            // Strictly insufficient headcount: CANNOT push or flip! Knock out colliding front zombie
             z.alive = false;
             game.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
             audio.playPushMetal();
