@@ -102,9 +102,10 @@ export class Renderer {
 
   // High-Res Progressive Panoramic Window (Scaled so ~95% height is fully visible, cropping only ~5% top/bottom)
   drawPanoramicBackground(img, progress, biomeType = 'CITY') {
-    if (img && img.complete && img.naturalWidth > 0) {
+    const validImg = (img && img.complete && img.naturalWidth > 0) ? img : (assets?.images?.cityBg || null);
+    if (validImg && validImg.complete && validImg.naturalWidth > 0) {
       const visibleHeight = 540; // Road surface baseline
-      const naturalRatio = img.naturalWidth / img.naturalHeight;
+      const naturalRatio = validImg.naturalWidth / validImg.naturalHeight;
 
       // Scale height to fit visible viewport with only 5% total overflow (2.5% top, 2.5% bottom)
       let drawH = visibleHeight * 1.05;
@@ -124,7 +125,7 @@ export class Renderer {
       const renderY = -Math.max(0, (drawH - visibleHeight) * 0.5);
 
       // Draw single crisp continuous panoramic image
-      this.ctx.drawImage(img, renderX, renderY, drawW, drawH);
+      this.ctx.drawImage(validImg, renderX, renderY, drawW, drawH);
     } else {
       // High-End Flat Cartoon Vector Procedural Fallback (Clean, Zero AI artifact, Crisp Art)
       this.drawProceduralVectorBackground(progress * 1000, biomeType);

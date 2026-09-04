@@ -611,6 +611,35 @@ function testVehicleSpriteRenderPriority() {
   assert(fillRectCount > 0, 'Vector fallback drawing engaged safely when assets not loaded');
 }
 
+// 25. On-Demand Background Loading and Graceful Degradation Test
+function testOnDemandBackgroundLoading() {
+  console.log('\n--- Testing On-Demand Background Loading & Graceful Biome Transition ---');
+  const testAssets = {
+    backgrounds: [
+      { id: 'city', name: '大都会夜景', roadStyle: 'CITY', img: { width: 2560, height: 1440, complete: true, naturalWidth: 2560 } }
+    ],
+    images: {
+      cityBg: { width: 2560, height: 1440, complete: true, naturalWidth: 2560 }
+    }
+  };
+
+  const bm = new BiomeManager();
+  bm.reset(testAssets);
+  assert(bm.zones.length > 0, 'BiomeManager successfully generates initial zones with only initial city scene');
+  assert(bm.zones[0].theme.id === 'city', 'Initial zone theme strictly matches loaded city theme');
+
+  // Simulate background silent preloading of second scene (beach)
+  testAssets.backgrounds.push({
+    id: 'beach', name: '热带海岸', roadStyle: 'BEACH', img: { width: 2560, height: 1440, complete: true, naturalWidth: 2560 }
+  });
+  testAssets.images.beachBg = testAssets.backgrounds[1].img;
+
+  bm.ensureDistance(60000, testAssets);
+  const themesUsed = new Set(bm.zones.map(z => z.theme.id));
+  assert(themesUsed.has('city'), 'Active biomes contain city scene');
+  assert(themesUsed.has('beach'), 'Dynamically loaded beach scene incorporated seamlessly into new distant biomes');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -637,6 +666,7 @@ testDistantVehicleNoAutoFlip();
 testStrictTankRequiredThreshold();
 testBombMultiCasualtyRadius();
 testVehicleSpriteRenderPriority();
+testOnDemandBackgroundLoading();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

@@ -11,15 +11,16 @@ export class AssetLoader {
     try {
       this.backgrounds = [];
 
-      // 1. 优先并发加载核心实体精灵（载具/道具/角色/神龙头），毫秒级极速就绪，杜绝被超大背景阻塞
-      const [vehiclesImg, propsImg, zombiesImg, dragonImg] = await Promise.all([
+      // 1. 优先并发加载核心实体精灵（载具/道具/角色/神龙头）与首屏大都会夜景，实现毫秒级极速首屏开局
+      const [vehiclesImg, propsImg, zombiesImg, dragonImg, cityBgImg] = await Promise.all([
         this.loadFirstAvailable(['/images/vehicles.jpg', '/backgrounds/vehicles.png']),
         this.loadFirstAvailable(['/images/props.jpg', '/backgrounds/props.png']),
         this.loadFirstAvailable(['/images/zombies.jpg', '/backgrounds/zombies.png']),
-        this.loadFirstAvailable(['/images/dragon_head.jpg', '/images/dragon_head.png'])
+        this.loadFirstAvailable(['/images/dragon_head.jpg', '/images/dragon_head.png']),
+        this.loadFirstAvailable(['/backgrounds/city.webp', '/backgrounds/city.jpg', '/images/city_bg.jpg'])
       ]);
 
-      // 2. 独立解析载具精灵（解除三图强绑定，确保只要 vehiclesImg 存在即可立即切片）
+      // 2. 独立解析载具精灵
       if (vehiclesImg) {
         const vehiclesCanvas = this.removeWhiteBackground(vehiclesImg);
         const vw = vehiclesCanvas.width;
@@ -58,48 +59,63 @@ export class AssetLoader {
         this.sprites.dragonHead = this.removeDarkBackground(dragonImg);
       }
 
-      // 核心精灵解析就绪，即刻标记 isLoaded，保证进入游戏时载具外观绝对一致
-      this.isLoaded = true;
-
-      // 6. 背景大图并发并行加载，避免 44MB 串行造成的严重网络阻塞
-      const bgConfigs = [
-        { id: 'city', name: '大都会夜景', files: ['/backgrounds/city.jpg', '/images/city_bg.jpg'], roadStyle: 'CITY' },
-        { id: 'beach', name: '热带海岸', files: ['/backgrounds/beach.jpg', '/images/beach_bg.jpg'], roadStyle: 'BEACH' },
-        { id: 'desert', name: '黄金沙漠', files: ['/backgrounds/desert.jpg', '/images/desert_bg.jpg'], roadStyle: 'DESERT' },
-        { id: 'b1', name: '赛博霓虹都市', files: ['/backgrounds/b1.jpg'], roadStyle: 'CYBER' },
-        { id: 'b2', name: '日落晚霞峡谷', files: ['/backgrounds/b2.jpg'], roadStyle: 'SUNSET' },
-        { id: 'b3', name: '未来科幻基地', files: ['/backgrounds/b3.jpg'], roadStyle: 'SCI_FI' },
-        { id: 'b4', name: '幽暗深渊森林', files: ['/backgrounds/b4.png'], roadStyle: 'FOREST' },
-      ];
-
-      const bgResults = await Promise.all(
-        bgConfigs.map(async (cfg) => {
-          const img = await this.loadFirstAvailable(cfg.files);
-          return { cfg, img };
-        })
-      );
-
-      for (const { cfg, img } of bgResults) {
-        if (img) {
-          this.backgrounds.push({
-            id: cfg.id,
-            name: cfg.name,
-            img,
-            roadStyle: cfg.roadStyle
-          });
-          this.images[`${cfg.id}Bg`] = img;
-        }
+      // 6. 首屏大都会背景就绪
+      if (cityBgImg) {
+        this.backgrounds.push({
+          id: 'city',
+          name: '大都会夜景',
+          img: cityBgImg,
+          roadStyle: 'CITY'
+        });
+        this.images.cityBg = cityBgImg;
       }
 
-      this.images.cityBg = this.images.cityBg || (this.backgrounds[0] ? this.backgrounds[0].img : null);
-      this.images.beachBg = this.images.beachBg || (this.backgrounds[1] ? this.backgrounds[1].img : null);
-      this.images.desertBg = this.images.desertBg || (this.backgrounds[2] ? this.backgrounds[2].img : null);
+      // 首屏关键资源全部就绪，标记 isLoaded，玩家进入即享完整贴图
+      this.isLoaded = true;
+      logger.system('首屏核心精灵与大都会背景已极速就绪');
 
-      logger.system('全套多场景背景与核心载具贴图就绪');
+      // 7. 后台静默并发预加载其余 6 大生态背景，网络带宽无感知平滑下载
+      this.preloadRemainingBackgrounds();
     } catch (e) {
       this.isLoaded = true;
       logger.system('贴图加载提示: ' + e.message + ', 启用矢量高精度渲染保底');
     }
+  }
+
+  async preloadRemainingBackgrounds() {
+    const remainingConfigs = [
+      { id: 'beach', name: '热带海岸', files: ['/backgrounds/beach.webp', '/backgrounds/beach.jpg', '/images/beach_bg.jpg'], roadStyle: 'BEACH' },
+      { id: 'desert', name: '黄金沙漠', files: ['/backgrounds/desert.webp', '/backgrounds/desert.jpg', '/images/desert_bg.jpg'], roadStyle: 'DESERT' },
+      { id: 'b1', name: '赛博霓虹都市', files: ['/backgrounds/b1.webp', '/backgrounds/b1.jpg'], roadStyle: 'CYBER' },
+      { id: 'b2', name: '日落晚霞峡谷', files: ['/backgrounds/b2.webp', '/backgrounds/b2.jpg'], roadStyle: 'SUNSET' },
+      { id: 'b3', name: '未来科幻基地', files: ['/backgrounds/b3.webp', '/backgrounds/b3.jpg'], roadStyle: 'SCI_FI' },
+      { id: 'b4', name: '幽暗深渊森林', files: ['/backgrounds/b4.webp', '/backgrounds/b4.png'], roadStyle: 'FOREST' },
+    ];
+
+    await Promise.all(
+      remainingConfigs.map(async (cfg) => {
+        try {
+          const img = await this.loadFirstAvailable(cfg.files);
+          if (img) {
+            if (!this.backgrounds.some(b => b.id === cfg.id)) {
+              this.backgrounds.push({
+                id: cfg.id,
+                name: cfg.name,
+                img,
+                roadStyle: cfg.roadStyle
+              });
+              this.images[`${cfg.id}Bg`] = img;
+            }
+          }
+        } catch (e) {
+          // 静默容错
+        }
+      })
+    );
+
+    this.images.beachBg = this.images.beachBg || (this.backgrounds.find(b => b.id === 'beach')?.img || null);
+    this.images.desertBg = this.images.desertBg || (this.backgrounds.find(b => b.id === 'desert')?.img || null);
+    logger.system('全套多场景高清 WebP 背景已于后台静默预加载完毕');
   }
 
   async loadFirstAvailable(candidatePaths) {
