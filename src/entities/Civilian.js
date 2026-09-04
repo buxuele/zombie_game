@@ -30,10 +30,27 @@ export class Civilian {
     this.panicSpeed = 30 + Math.random() * 40;
     this.panicBob = Math.random() * Math.PI;
 
+    // Panic & Screaming State when zombies approach
+    this.isPanicking = false;
+    this.hasScreamed = false;
+    this.panicTimer = 0;
+
     // Abyss Fall Physics
     this.vy = 0;
     this.isFalling = false;
     this.fallRotation = 0;
+  }
+
+  triggerPanic(particleSystem = null) {
+    if (this.isBitten || this.isFalling || this.isPanicking) return;
+    this.isPanicking = true;
+    if (!this.hasScreamed) {
+      this.hasScreamed = true;
+      audio.playCivilianScream();
+      if (particleSystem && typeof particleSystem.spawnCivilianPanic === 'function') {
+        particleSystem.spawnCivilianPanic(this.x + this.width / 2, this.y - 12);
+      }
+    }
   }
 
   bite(particleSystem, floatingText, horde) {
@@ -91,8 +108,17 @@ export class Civilian {
       return;
     }
 
-    this.animTimer += dt * 9;
-    this.x += this.panicSpeed * dt;
+    if (this.isPanicking) {
+      this.animTimer += dt * 26;
+      this.x += (this.panicSpeed * 1.8) * dt;
+      this.panicTimer += dt;
+      if (particleSystem && typeof particleSystem.spawn === 'function' && Math.random() > 0.6) {
+        particleSystem.spawn(this.x + this.width / 2, this.y - 6, (Math.random() - 0.5) * 30, -35, '#ffffff', 2.5, 4, 0.16, 120, 'sweat');
+      }
+    } else {
+      this.animTimer += dt * 9;
+      this.x += this.panicSpeed * dt;
+    }
   }
 
   draw(ctx, cameraX) {
@@ -140,9 +166,9 @@ export class Civilian {
     const pantsColor = this.pantsColor;
 
     // Running leg oscillation
-    const legSwing = Math.sin(this.animTimer) * 7;
+    const legSwing = Math.sin(this.animTimer) * (this.isPanicking ? 10 : 7);
     const armSwing = Math.cos(this.animTimer) * 10;
-    const headBob = Math.abs(Math.sin(this.animTimer * 1.5)) * 3;
+    const headBob = Math.abs(Math.sin(this.animTimer * 1.5)) * (this.isPanicking ? 5 : 3);
 
     // Legs
     ctx.fillStyle = pantsColor;
@@ -155,19 +181,37 @@ export class Civilian {
     ctx.roundRect(-8, -32, 16, 18, 4);
     ctx.fill();
 
-    // Arms waving in panic
+    // Arms waving in panic or normal run
     ctx.fillStyle = skinColor;
-    ctx.save();
-    ctx.translate(-8, -28);
-    ctx.rotate(-0.8 + armSwing * 0.05);
-    ctx.fillRect(-3, 0, 4, 12);
-    ctx.restore();
+    if (this.isPanicking) {
+      // Hilarious panic flailing arms raised high over head
+      const flailLeft = -2.1 + Math.sin(this.animTimer * 1.8) * 0.6;
+      const flailRight = 2.1 + Math.cos(this.animTimer * 1.8) * 0.6;
 
-    ctx.save();
-    ctx.translate(8, -28);
-    ctx.rotate(0.8 - armSwing * 0.05);
-    ctx.fillRect(-1, 0, 4, 12);
-    ctx.restore();
+      ctx.save();
+      ctx.translate(-7, -30);
+      ctx.rotate(flailLeft);
+      ctx.fillRect(-2, 0, 4, 14);
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(7, -30);
+      ctx.rotate(flailRight);
+      ctx.fillRect(-2, 0, 4, 14);
+      ctx.restore();
+    } else {
+      ctx.save();
+      ctx.translate(-8, -28);
+      ctx.rotate(-0.8 + armSwing * 0.05);
+      ctx.fillRect(-3, 0, 4, 12);
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(8, -28);
+      ctx.rotate(0.8 - armSwing * 0.05);
+      ctx.fillRect(-1, 0, 4, 12);
+      ctx.restore();
+    }
 
     // Head
     ctx.fillStyle = skinColor;
@@ -181,24 +225,53 @@ export class Civilian {
     ctx.arc(0, -41 - headBob, 10, Math.PI * 0.8, Math.PI * 2.2);
     ctx.fill();
 
-    // Screaming Open Mouth
-    ctx.fillStyle = '#922b21';
-    ctx.beginPath();
-    ctx.arc(3, -36 - headBob, 3.5, 0, Math.PI * 2);
-    ctx.fill();
+    // Mouth: huge screaming oval if panicking
+    if (this.isPanicking) {
+      ctx.fillStyle = '#641e16';
+      ctx.beginPath();
+      ctx.ellipse(2, -34 - headBob, 4.5, 6.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#922b21';
+      ctx.beginPath();
+      ctx.arc(3, -36 - headBob, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-    // Wide Panicked Eyes
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(-2, -40 - headBob, 3, 0, Math.PI * 2);
-    ctx.arc(4, -40 - headBob, 3, 0, Math.PI * 2);
-    ctx.fill();
+    // Eyes: terrified wide whites and trembling pupils if panicking
+    if (this.isPanicking) {
+      const shudder = Math.sin(this.animTimer * 4) * 1.5;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-3 + shudder, -40 - headBob, 4.2, 0, Math.PI * 2);
+      ctx.arc(4 + shudder, -40 - headBob, 4.2, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.fillStyle = '#15181e';
-    ctx.beginPath();
-    ctx.arc(-2, -40 - headBob, 1.2, 0, Math.PI * 2);
-    ctx.arc(4, -40 - headBob, 1.2, 0, Math.PI * 2);
-    ctx.fill();
+      ctx.fillStyle = '#15181e';
+      ctx.beginPath();
+      ctx.arc(-3 + shudder, -40 - headBob, 1.2, 0, Math.PI * 2);
+      ctx.arc(4 + shudder, -40 - headBob, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Animated floating exclamation mark above head
+      ctx.fillStyle = '#e74c3c';
+      ctx.font = '900 15px sans-serif';
+      ctx.textAlign = 'center';
+      const markBounce = Math.sin(this.animTimer * 3) * 3;
+      ctx.fillText('!', 0, -56 - headBob + markBounce);
+    } else {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(-2, -40 - headBob, 3, 0, Math.PI * 2);
+      ctx.arc(4, -40 - headBob, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#15181e';
+      ctx.beginPath();
+      ctx.arc(-2, -40 - headBob, 1.2, 0, Math.PI * 2);
+      ctx.arc(4, -40 - headBob, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Profession Hat
     if (this.hatType === 'hardhat') {

@@ -640,6 +640,52 @@ function testOnDemandBackgroundLoading() {
   assert(themesUsed.has('beach'), 'Dynamically loaded beach scene incorporated seamlessly into new distant biomes');
 }
 
+// 26. Civilian Approaching Panic & Scream Invariant Test
+function testCivilianPanicAndScreamOnApproach() {
+  console.log('\n--- Testing Civilian Approaching Panic & Scream Reaction ---');
+  const civ = new Civilian(500, 540);
+  assert(civ.isPanicking === false, 'Civilian starts in calm state');
+  assert(civ.hasScreamed === false, 'Civilian has not screamed initially');
+
+  const fakeGame = {
+    horde: {
+      leader: { x: 100, y: 492, width: 46, height: 48 },
+      zombies: [{ x: 100, y: 492, width: 46, height: 48, alive: true }]
+    },
+    transformations: { activeType: null },
+    level: { civilians: [civ] },
+    particles: { spawnCivilianPanic: () => {}, spawn: () => {} }
+  };
+
+  // 1. Far away (> 220px): Civilian stays calm
+  CollisionManager.handleCivilians(fakeGame);
+  assert(civ.isPanicking === false, 'Civilian stays calm when zombies are far away (354px)');
+
+  // 2. Approaching within 220px: Civilian triggers panic & scream
+  fakeGame.horde.leader.x = 350; // distX = 500 - (350 + 46) = 104px < 220px
+  CollisionManager.handleCivilians(fakeGame);
+  assert(civ.isPanicking === true, 'Civilian triggers panic state when zombies approach within 220px');
+  assert(civ.hasScreamed === true, 'Civilian triggers cartoon scream sound when in danger');
+
+  // 3. Render test under panic flailing state
+  const mockCtx = {
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    rotate: () => {},
+    beginPath: () => {},
+    roundRect: () => {},
+    fillRect: () => {},
+    arc: () => {},
+    ellipse: () => {},
+    fill: () => {},
+    stroke: () => {},
+    fillText: () => {}
+  };
+  civ.draw(mockCtx, 0);
+  assert(civ.alive === true, 'Panicking civilian renders flailing and screaming visuals safely without error');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -667,6 +713,7 @@ testStrictTankRequiredThreshold();
 testBombMultiCasualtyRadius();
 testVehicleSpriteRenderPriority();
 testOnDemandBackgroundLoading();
+testCivilianPanicAndScreamOnApproach();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

@@ -61,6 +61,12 @@ export class CollisionManager {
     for (const civ of game.level.civilians) {
       if (!civ.alive || civ.isBitten) continue;
 
+      // 当僵尸大军逼近即将被吃掉时（220像素内），触发滑稽尖叫声音与惊慌抱头动作
+      const distX = civ.x - (leader.x + leader.width);
+      if (distX > 0 && distX < 220 && Math.abs(civ.y - leader.y) < 140) {
+        civ.triggerPanic(game.particles);
+      }
+
       for (const z of game.horde.zombies) {
         if (z.alive && this.checkAABB(z, civ)) {
           if (isGold) {

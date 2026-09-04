@@ -147,6 +147,33 @@ class AudioManager {
     osc.stop(now + 0.14);
   }
 
+  playCivilianScream() {
+    if (!this.ctx || !storage.isSoundEnabled()) return;
+    this.init();
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const pitch = this.getPitchJitter(0.12);
+
+    // Funny cartoon high-pitched panic screech
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(520 * pitch, now);
+    osc.frequency.exponentialRampToValueAtTime(1040 * pitch, now + 0.08);
+    osc.frequency.linearRampToValueAtTime(860 * pitch, now + 0.16);
+    osc.frequency.exponentialRampToValueAtTime(360 * pitch, now + 0.25);
+
+    gain.gain.setValueAtTime(0.01, now);
+    gain.gain.linearRampToValueAtTime(0.24, now + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
+
   playPushMetal() {
     if (!this.ctx || !storage.isSoundEnabled()) return;
     this.init();
