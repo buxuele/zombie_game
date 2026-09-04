@@ -1,6 +1,7 @@
 import { Zombie } from '../src/entities/Zombie.js';
 import { ZombieHorde } from '../src/entities/ZombieHorde.js';
 import { VEHICLE_TYPES, Vehicle } from '../src/entities/Vehicle.js';
+import { assets } from '../src/engine/AssetLoader.js';
 import { Storage } from '../src/systems/Storage.js';
 import { BiomeManager } from '../src/systems/BiomeManager.js';
 
@@ -570,6 +571,46 @@ function testBombMultiCasualtyRadius() {
   assert(fakeGame.horde.count === 1, 'Horde count reduced from 4 to 1 (3 casualties)');
 }
 
+// 24. Vehicle Sprite Render Priority Invariant Test
+function testVehicleSpriteRenderPriority() {
+  console.log('\n--- Testing Vehicle Sprite Render Priority Invariant ---');
+  const bus = new Vehicle(100, 540, 'BUS');
+  let drawImageCalled = false;
+  let fillRectCount = 0;
+
+  const mockCtx = {
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    rotate: () => {},
+    beginPath: () => {},
+    ellipse: () => {},
+    fill: () => {},
+    roundRect: () => {},
+    fillRect: () => { fillRectCount++; },
+    arc: () => {},
+    drawImage: () => { drawImageCalled = true; },
+    fillText: () => {},
+    stroke: () => {}
+  };
+
+  // When sprite is loaded, it must strictly use drawImage and skip fallback drawing
+  assets.isLoaded = true;
+  assets.sprites.bus = { width: 200, height: 65 };
+  bus.draw(mockCtx, 0);
+  assert(drawImageCalled === true, 'Vehicle strictly draws sprite image when assets.isLoaded and sprite exists');
+  assert(fillRectCount === 0, 'Fallback vector drawing skipped when sprite is present');
+
+  // When sprite is not loaded, it falls back to vector drawing without throwing
+  assets.isLoaded = false;
+  assets.sprites.bus = null;
+  drawImageCalled = false;
+  fillRectCount = 0;
+  bus.draw(mockCtx, 0);
+  assert(drawImageCalled === false, 'drawImage not called when sprite is missing');
+  assert(fillRectCount > 0, 'Vector fallback drawing engaged safely when assets not loaded');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -595,6 +636,7 @@ testCollisionManagerModule();
 testDistantVehicleNoAutoFlip();
 testStrictTankRequiredThreshold();
 testBombMultiCasualtyRadius();
+testVehicleSpriteRenderPriority();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

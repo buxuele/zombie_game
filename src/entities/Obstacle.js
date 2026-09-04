@@ -90,7 +90,7 @@ export class Bomb {
     if (!this.alive) return;
     this.fuseTimer += dt;
 
-    if (particleSystem && Math.random() > 0.3) {
+    if (particleSystem && typeof particleSystem.spawn === 'function' && Math.random() > 0.3) {
       const fuseX = this.x + 24;
       const fuseY = this.y - 4;
       particleSystem.spawn(fuseX, fuseY, (Math.random() - 0.5) * 40, -Math.random() * 50 - 20, '#ffd700', 3, 1, 0.2, 50, 'spark');
