@@ -70,12 +70,12 @@ export class AssetLoader {
         this.images.cityBg = cityBgImg;
       }
 
-      // 首屏关键资源全部就绪，标记 isLoaded，玩家进入即享完整贴图
-      this.isLoaded = true;
-      logger.system('首屏核心精灵与大都会背景已极速就绪');
+      // 7. 并发预加载其余 6 大生态背景，确保关卡规划时全部就绪
+      await this.preloadRemainingBackgrounds();
 
-      // 7. 后台静默并发预加载其余 6 大生态背景，网络带宽无感知平滑下载
-      this.preloadRemainingBackgrounds();
+      // 全套资源就绪，标记 isLoaded
+      this.isLoaded = true;
+      logger.system('首屏核心精灵与全套高清多场景背景已全部就绪');
     } catch (e) {
       this.isLoaded = true;
       logger.system('贴图加载提示: ' + e.message + ', 启用矢量高精度渲染保底');

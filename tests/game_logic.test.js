@@ -841,58 +841,7 @@ function testParallaxScrollingAndNewBiomes() {
   assert(scrollAt5000 !== scrollAt1000, `Background moves fluidly across distance: ${scrollAt5000}`);
 }
 
-// 31. Ambient Critters Rabbit and Cat Funny Bouncing Invariant Test
-import { Critter } from '../src/entities/Critter.js';
-function testAmbientCritters() {
-  console.log('\n--- Testing Funny Ambient Critters (Rabbits and Cats) ---');
-  const rabbit = new Critter(500, 540, 'RABBIT');
-  const cat = new Critter(800, 540, 'CAT');
-
-  assert(rabbit.state === 'IDLE', 'Rabbit starts in calm idle state');
-  assert(cat.state === 'IDLE', 'Cat starts in calm idle state');
-
-  // 1. Zombies far away (> 300px): Rabbit remains calm
-  rabbit.update(1 / 60, 100, null);
-  assert(rabbit.state === 'IDLE', 'Rabbit stays calm when zombies are far away (400px)');
-
-  // 2. Zombies approach within 260px: Rabbit gets startled and leaps
-  rabbit.update(1 / 60, 320, null); // dist = 500 - 320 = 180px < 260px
-  assert(rabbit.state === 'STARTLED', 'Rabbit triggers startled jumping mode');
-  assert(rabbit.vy < 0, 'Rabbit leaps into the air with upward impulse');
-  assert(rabbit.vx > 0, 'Rabbit scampers forward rapidly');
-
-  // 3. Cat startled reaction
-  cat.update(1 / 60, 600, null); // dist = 800 - 600 = 200px < 260px
-  assert(cat.state === 'STARTLED', 'Cat triggers puffed-up startled leap');
-  assert(cat.vy < -300, 'Cat launches high vertical somersault');
-
-  // 4. Render mock test
-  const mockCtx = {
-    save: () => {},
-    restore: () => {},
-    translate: () => {},
-    scale: () => {},
-    rotate: () => {},
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    beginPath: () => {},
-    ellipse: () => {},
-    arc: () => {},
-    fill: () => {},
-    stroke: () => {},
-    moveTo: () => {},
-    lineTo: () => {},
-    closePath: () => {},
-    quadraticCurveTo: () => {}
-  };
-  rabbit.draw(mockCtx, 0);
-  cat.draw(mockCtx, 0);
-  assert(rabbit.x > 500, 'Rabbit has scampered forward');
-  assert(cat.x > 800, 'Cat has scampered forward');
-}
-
-// 32. Shop and Economy System Invariant Test
+// 31. Shop and Economy System Invariant Test
 import { UPGRADES_CATALOG, HATS_CATALOG } from '../src/systems/Shop.js';
 
 function testShopAndEconomySystem() {
@@ -951,6 +900,65 @@ function testShopAndEconomySystem() {
   assert(mockGame.feverTimer === 7.0, `feverTimer scaled by feverDuration level 3 to 7.0s: ${mockGame.feverTimer}`);
 }
 
+// 32. Menu Mascot Invariants & Multi-Biome Non-Repeating Cycle Test
+function testMenuMascotAndDiverseBiomeCycle() {
+  console.log('\n--- Testing Menu Mascot & Multi-Biome Non-Repeating Cycle ---');
+
+  // 1. Menu mascot speech lines validation
+  const testMenuQuotes = [
+    '全员集合，目标掀翻全城汽车！',
+    '冲破一万米，把金币通通带回家！',
+    '别发呆啦，快按开始带我们冲锋！',
+    '报告长官，全员已完成战前热身！',
+    '这一把状态神勇，必定刷新最高纪录！',
+    '吃饱喝足，今天我们要横扫整条街道！',
+    '军团集结完毕，就等老大一声令下！'
+  ];
+
+  for (const q of testMenuQuotes) {
+    assert(!/[()\[\]{}（）【】「」]/.test(q), `Menu quote contains no brackets: ${q}`);
+    assert(!/["“”]/.test(q), `Menu quote contains no quotation marks: ${q}`);
+    assert(!/[\u{1F300}-\u{1FAFF}]/u.test(q), `Menu quote contains no emoji: ${q}`);
+  }
+
+  // 2. Multi-Biome 7-Theme Diversity & Non-Repeating Verification
+  const mockAll7Assets = {
+    backgrounds: [
+      { id: 'city', name: '大都会夜景', roadStyle: 'CITY' },
+      { id: 'beach', name: '热带海岸', roadStyle: 'BEACH' },
+      { id: 'desert', name: '黄金沙漠', roadStyle: 'DESERT' },
+      { id: 'b1', name: '中世纪古堡庄园', roadStyle: 'CASTLE' },
+      { id: 'b2', name: '日落晚霞峡谷', roadStyle: 'SUNSET' },
+      { id: 'b3', name: '未来科幻基地', roadStyle: 'SCI_FI' },
+      { id: 'b4', name: '清雅荷花池畔', roadStyle: 'LOTUS' }
+    ]
+  };
+
+  const testBM = new BiomeManager();
+  testBM.reset(mockAll7Assets);
+  testBM.ensureDistance(80000, mockAll7Assets);
+
+  assert(testBM.zones.length >= 15, `Generated at least 15 zones: ${testBM.zones.length}`);
+
+  const encounteredThemes = new Set(testBM.zones.map(z => z.theme.id));
+  for (const theme of mockAll7Assets.backgrounds) {
+    assert(encounteredThemes.has(theme.id), `Diverse rotation includes theme: ${theme.id}`);
+  }
+
+  // Verify no theme repeats within 3 consecutive zones
+  for (let i = 2; i < testBM.zones.length; i++) {
+    const cur = testBM.zones[i].theme.id;
+    const prev1 = testBM.zones[i - 1].theme.id;
+    const prev2 = testBM.zones[i - 2].theme.id;
+    assert(cur !== prev1, `Zone ${i} does not repeat immediate previous zone`);
+    assert(cur !== prev2, `Zone ${i} does not repeat 2 zones ago`);
+  }
+
+  // 3. Road second line dashed guideline test
+  const lg = new LevelGenerator();
+  assert(typeof lg.drawRoadDashes === 'function', 'LevelGenerator has drawRoadDashes helper');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -983,8 +991,8 @@ testTransformationDurationsAndUFORemoval();
 testHighContrastGroundRendering();
 testPauseModalMascotAndHookSystem();
 testParallaxScrollingAndNewBiomes();
-testAmbientCritters();
 testShopAndEconomySystem();
+testMenuMascotAndDiverseBiomeCycle();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

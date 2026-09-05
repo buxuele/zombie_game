@@ -16,16 +16,18 @@ export const THEME_SKY_GRADIENTS = {
 export class BiomeManager {
   constructor() {
     this.zones = [];
-    this.zoneLengthMin = 6500;
-    this.zoneLengthMax = 8000;
-    this.transitionLength = 2200; // Smooth 2200px crossfade
+    this.zoneLengthMin = 3600;
+    this.zoneLengthMax = 5000;
+    this.transitionLength = 1500; // Smooth 1500px crossfade
     this.lastThemeId = null;
+    this.recentThemeIds = [];
     this.generatedDistance = 0;
   }
 
   reset(passedAssets = null) {
     this.zones = [];
     this.lastThemeId = null;
+    this.recentThemeIds = [];
     this.generatedDistance = 0;
     this.generateInitialZones(passedAssets || globalAssets);
   }
@@ -52,7 +54,10 @@ export class BiomeManager {
     if (!availableThemes || availableThemes.length === 0) return;
 
     while (this.generatedDistance < targetDistance + 12000) {
-      const candidates = availableThemes.filter(t => t.id !== this.lastThemeId);
+      let candidates = availableThemes.filter(t => !this.recentThemeIds.includes(t.id));
+      if (candidates.length === 0) {
+        candidates = availableThemes.filter(t => t.id !== this.lastThemeId);
+      }
       const chosenTheme = candidates.length > 0
         ? candidates[Math.floor(Math.random() * candidates.length)]
         : availableThemes[0];
@@ -91,6 +96,11 @@ export class BiomeManager {
 
       this.zones.push(zone);
       this.lastThemeId = chosenTheme.id;
+      this.recentThemeIds.push(chosenTheme.id);
+      const maxHistory = Math.max(1, availableThemes.length - 2);
+      if (this.recentThemeIds.length > maxHistory) {
+        this.recentThemeIds.shift();
+      }
 
       logger.system(`生成新生态区域 #${zone.index + 1}: ${chosenTheme.name} (${Math.floor(startX / 10)}m - ${Math.floor(endX / 10)}m)`);
     }

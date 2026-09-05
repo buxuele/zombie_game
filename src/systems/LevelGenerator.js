@@ -1,7 +1,6 @@
 import { Vehicle } from '../entities/Vehicle.js';
 import { Civilian } from '../entities/Civilian.js';
 import { Coin, Bomb, MysteryBox } from '../entities/Obstacle.js';
-import { Critter } from '../entities/Critter.js';
 import { biomeManager } from './BiomeManager.js';
 import { GAME_CONFIG } from '../config/GameConfig.js';
 
@@ -14,7 +13,6 @@ export class LevelGenerator {
     this.coins = [];
     this.bombs = [];
     this.mysteryBoxes = [];
-    this.critters = [];
     this.puddles = [];
     this.manholes = [];
 
@@ -31,10 +29,6 @@ export class LevelGenerator {
     this.coins = [];
     this.bombs = [];
     this.mysteryBoxes = [];
-    this.critters = [
-      new Critter(780, this.groundY, 'RABBIT'),
-      new Critter(1350, this.groundY, 'CAT')
-    ];
     this.puddles = [
       { x: 900, width: 80 },
       { x: 2200, width: 110 }
@@ -97,10 +91,6 @@ export class LevelGenerator {
 
     for (const civ of this.civilians) {
       civ.update(dt, particleSystem, this);
-    }
-
-    for (const critter of this.critters) {
-      critter.update(dt, leaderX, this);
     }
   }
 
@@ -193,13 +183,6 @@ export class LevelGenerator {
         }
         cursorX += count * 36 + 140;
       }
-
-      // Random funny ambient critters hopping around on the platform
-      if (Math.random() > 0.45) {
-        const critterType = Math.random() > 0.5 ? 'RABBIT' : 'CAT';
-        const critterX = cursorX + 60 + Math.random() * 80;
-        this.critters.push(new Critter(critterX, this.groundY, critterType));
-      }
     }
   }
 
@@ -210,7 +193,6 @@ export class LevelGenerator {
     this.coins = this.coins.filter(c => c.x + c.width >= minX && !c.collected);
     this.bombs = this.bombs.filter(b => b.x + b.width >= minX && b.alive);
     this.mysteryBoxes = this.mysteryBoxes.filter(m => m.x + m.width >= minX && !m.collected);
-    this.critters = this.critters.filter(c => c.x + 200 >= minX);
     this.puddles = this.puddles.filter(p => p.x + p.width >= minX);
     this.manholes = this.manholes.filter(m => m.x >= minX);
   }
@@ -292,9 +274,12 @@ export class LevelGenerator {
         ctx.fillStyle = '#f97316';
         ctx.fillRect(renderX, this.groundY, width, 4);
 
-        // White Safety Line
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(renderX, this.groundY + 48, width, 3);
+        // Lane Edge Solid Stripe
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(renderX, this.groundY + 14, width, 2);
+
+        // Center Dashed Guideline (Dashed 虚线)
+        this.drawRoadDashes(ctx, plat, cameraX, 48, '#f8fafc', 44, 36, 3.5);
       } else if (roadStyle === 'BEACH') {
         // Deep Walnut Seaside Boardwalk (Dark Rich Wood contrasting with Bright Turquoise Ocean)
         const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
@@ -316,9 +301,10 @@ export class LevelGenerator {
           ctx.fillRect(dx - cameraX, this.groundY + 5, 2, 175);
         }
 
-        // Center Inlaid Anti-Slip Track
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(renderX, this.groundY + 48, width, 3);
+        // Solid Edge Stripe & Center Dashed Track (Dashed 虚线)
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(renderX, this.groundY + 14, width, 2);
+        this.drawRoadDashes(ctx, plat, cameraX, 48, '#e2e8f0', 44, 36, 3.5);
       } else if (roadStyle === 'BRIDGE') {
         // Suspension Sea Bridge Steel Deck
         const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
@@ -333,9 +319,10 @@ export class LevelGenerator {
         ctx.fillStyle = '#ef4444';
         ctx.fillRect(renderX, this.groundY + 5, width, 2);
 
-        // Pure White Highway Guideline
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(renderX, this.groundY + 48, width, 3);
+        // Solid Edge Stripe & Highway Dashed Guideline (Dashed 虚线)
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(renderX, this.groundY + 14, width, 2);
+        this.drawRoadDashes(ctx, plat, cameraX, 48, '#f8fafc', 44, 36, 3.5);
       } else if (roadStyle === 'SCI_FI') {
         // Sci-Fi Titanium Alloy Deck with Sky-Blue Mag-Rail (Contrasting with Deep Space)
         const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
@@ -351,9 +338,10 @@ export class LevelGenerator {
         ctx.fillStyle = '#0284c7';
         ctx.fillRect(renderX, this.groundY + 2, width, 2);
 
-        // Cyan Holographic Guidance Line
-        ctx.fillStyle = '#38bdf8';
-        ctx.fillRect(renderX, this.groundY + 48, width, 3);
+        // Solid Mag-guide Line & Cyan Holographic Center Dashes (Dashed 虚线)
+        ctx.fillStyle = '#7dd3fc';
+        ctx.fillRect(renderX, this.groundY + 14, width, 2);
+        this.drawRoadDashes(ctx, plat, cameraX, 48, '#38bdf8', 44, 36, 3.5);
       } else if (roadStyle === 'FOREST') {
         // Pale Concrete Highway (Bright Light Gray Cut Through Dark Green Forest Canopy)
         const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
@@ -369,16 +357,10 @@ export class LevelGenerator {
         ctx.fillStyle = '#eab308';
         ctx.fillRect(renderX, this.groundY + 2, width, 2);
 
-        // Sunny Amber Center Dashes
-        ctx.fillStyle = '#fbbf24';
-        const dashWidth = 40;
-        const dashGap = 40;
-        const startOffset = Math.floor(plat.startX / (dashWidth + dashGap)) * (dashWidth + dashGap);
-        for (let dx = startOffset; dx < plat.endX; dx += dashWidth + dashGap) {
-          if (dx >= plat.startX && dx + dashWidth <= plat.endX) {
-            ctx.fillRect(dx - cameraX, this.groundY + 48, dashWidth, 5);
-          }
-        }
+        // Solid Edge Stripe & Sunny Amber Center Dashes (Dashed 虚线)
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(renderX, this.groundY + 14, width, 2);
+        this.drawRoadDashes(ctx, plat, cameraX, 48, '#fbbf24', 40, 36, 3.5);
       } else if (roadStyle === 'LOTUS') {
         // High-Contrast Lotus Pond Jade Slate (Contrasting with Lotus Lilypads)
         const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
@@ -400,16 +382,10 @@ export class LevelGenerator {
           ctx.fillRect(dx - cameraX, this.groundY + 5, 2, 175);
         }
 
-        // Emerald Water Glow Center Guidance
-        ctx.fillStyle = '#34d399';
-        const dashWidth = 42;
-        const dashGap = 42;
-        const startOffset = Math.floor(plat.startX / (dashWidth + dashGap)) * (dashWidth + dashGap);
-        for (let dx = startOffset; dx < plat.endX; dx += dashWidth + dashGap) {
-          if (dx >= plat.startX && dx + dashWidth <= plat.endX) {
-            ctx.fillRect(dx - cameraX, this.groundY + 48, dashWidth, 4.5);
-          }
-        }
+        // Solid Edge Stripe & Emerald Water Glow Center Dashes (Dashed 虚线)
+        ctx.fillStyle = '#e2e8f0';
+        ctx.fillRect(renderX, this.groundY + 14, width, 2);
+        this.drawRoadDashes(ctx, plat, cameraX, 48, '#34d399', 42, 36, 3.5);
       } else if (roadStyle === 'CASTLE') {
         // European Castle Red Brick Pathway
         const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
@@ -425,9 +401,10 @@ export class LevelGenerator {
         ctx.fillStyle = '#d97706';
         ctx.fillRect(renderX, this.groundY + 3, width, 2);
 
-        // White Carriage Guideline
-        ctx.fillStyle = '#f8fafc';
-        ctx.fillRect(renderX, this.groundY + 48, width, 3);
+        // Solid Carriage Edge & Center Dashed Guideline (Dashed 虚线)
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(renderX, this.groundY + 14, width, 2);
+        this.drawRoadDashes(ctx, plat, cameraX, 48, '#f8fafc', 44, 36, 3.5);
       } else {
         // Desert Blacktop Expressway (Deep Black Asphalt Slicing Through Golden/Sunset Sand)
         const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
@@ -443,10 +420,12 @@ export class LevelGenerator {
         ctx.fillStyle = '#f59e0b';
         ctx.fillRect(renderX, this.groundY + 3, width, 2);
 
-        // Distinct Double Solid Yellow Highway Lines (Double Amber Striping)
+        // 1st Line: Solid Yellow Highway Line
         ctx.fillStyle = '#eab308';
-        ctx.fillRect(renderX, this.groundY + 45, width, 2.5);
-        ctx.fillRect(renderX, this.groundY + 51, width, 2.5);
+        ctx.fillRect(renderX, this.groundY + 44, width, 2.5);
+
+        // 2nd Line: Classic Highway Dashed Line (虚线)
+        this.drawRoadDashes(ctx, plat, cameraX, 52, '#eab308', 40, 30, 2.5);
       }
 
       // Draw Industrial Warning Hazard Stripes on Cliff Edges
@@ -482,7 +461,6 @@ export class LevelGenerator {
     for (const m of this.mysteryBoxes) m.draw(ctx, cameraX);
     for (const bomb of this.bombs) bomb.draw(ctx, cameraX);
     for (const civ of this.civilians) civ.draw(ctx, cameraX);
-    for (const critter of this.critters) critter.draw(ctx, cameraX);
     for (const v of this.vehicles) v.draw(ctx, cameraX);
   }
 
@@ -521,6 +499,17 @@ export class LevelGenerator {
       ctx.moveTo(rStart, this.groundY + 155);
       ctx.lineTo(rEnd, this.groundY + 155);
       ctx.stroke();
+    }
+  }
+
+  drawRoadDashes(ctx, plat, cameraX, offsetY, color = '#f8fafc', dashWidth = 44, dashGap = 36, height = 3.5) {
+    ctx.fillStyle = color;
+    const period = dashWidth + dashGap;
+    const startOffset = Math.floor(plat.startX / period) * period;
+    for (let dx = startOffset; dx < plat.endX; dx += period) {
+      if (dx >= plat.startX && dx + dashWidth <= plat.endX) {
+        ctx.fillRect(dx - cameraX, this.groundY + offsetY, dashWidth, height);
+      }
     }
   }
 

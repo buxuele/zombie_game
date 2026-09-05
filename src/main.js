@@ -45,13 +45,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const btnToggleSoundMenu = document.getElementById('btn-toggle-sound-menu');
   const btnToggleSoundPause = document.getElementById('btn-toggle-sound-pause');
 
+  // Menu Mascot Canvas
+  const menuMascotCanvas = document.getElementById('menu-mascot-canvas');
+
   // Pause Modal Elements
   const pauseMascotCanvas = document.getElementById('pause-mascot-canvas');
-  const pauseMascotHint = document.getElementById('pause-mascot-hint');
   const pauseStatHorde = document.getElementById('pause-stat-horde');
   const pauseStatDist = document.getElementById('pause-stat-dist');
   const pauseStatCoins = document.getElementById('pause-stat-coins');
-  const pauseHookBanner = document.getElementById('pause-hook-banner');
 
   // Game Over Elements
   const goDistance = document.getElementById('go-distance');
@@ -551,11 +552,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (pauseStatHorde) pauseStatHorde.textContent = `${livingZombies} 丧尸`;
     if (pauseStatDist) pauseStatDist.textContent = `${currentDist} m`;
     if (pauseStatCoins) pauseStatCoins.textContent = `${currentCoins}`;
-
-    if (pauseHookBanner) {
-      const randomHook = pauseHookPhrases[Math.floor(Math.random() * pauseHookPhrases.length)];
-      pauseHookBanner.textContent = randomHook;
-    }
   }
 
   if (pauseMascotCanvas) {
@@ -579,9 +575,222 @@ window.addEventListener('DOMContentLoaded', async () => {
       pauseMascotBounce = 1.0;
       pauseMascotSpeech = pauseMascotQuotes[pauseMascotPokeCount % pauseMascotQuotes.length];
       pauseMascotSpeechTimer = 2.4;
-      if (pauseMascotHint) {
-        pauseMascotHint.textContent = `已戳急小僵尸 ${pauseMascotPokeCount} 次，它快等不及了！`;
+      audio.playScoreRoll();
+    });
+  }
+
+  // Interactive Leading Zombie Squad Mascot on Main Menu Screen
+  let menuMascotPokeCount = 0;
+  let menuMascotBounce = 0;
+  let menuMascotSpeech = '';
+  let menuMascotSpeechTimer = 0;
+  let menuMascotAnimId = null;
+  let isMouseOverMenuCanvas = false;
+
+  const menuMascotQuotes = [
+    '全员集合，目标掀翻全城汽车！',
+    '冲破一万米，把金币通通带回家！',
+    '别发呆啦，快按开始带我们冲锋！',
+    '报告长官，全员已完成战前热身！',
+    '这一把状态神勇，必定刷新最高纪录！',
+    '吃饱喝足，今天我们要横扫整条街道！',
+    '军团集结完毕，就等老大一声令下！'
+  ];
+
+  function startMenuMascotAnimation() {
+    if (menuMascotAnimId) cancelAnimationFrame(menuMascotAnimId);
+    let lastT = performance.now();
+
+    function loop(now) {
+      const dt = Math.min(0.05, (now - lastT) / 1000);
+      lastT = now;
+
+      if (menuMascotBounce > 0) {
+        menuMascotBounce = Math.max(0, menuMascotBounce - dt * 3.5);
       }
+      if (menuMascotSpeechTimer > 0) {
+        menuMascotSpeechTimer -= dt;
+      }
+
+      renderMenuMascot(now);
+      menuMascotAnimId = requestAnimationFrame(loop);
+    }
+    menuMascotAnimId = requestAnimationFrame(loop);
+  }
+
+  function stopMenuMascotAnimation() {
+    if (menuMascotAnimId) {
+      cancelAnimationFrame(menuMascotAnimId);
+      menuMascotAnimId = null;
+    }
+  }
+
+  function renderMenuMascot(timeMs) {
+    if (!menuMascotCanvas) return;
+    const ctx = menuMascotCanvas.getContext('2d');
+    const w = menuMascotCanvas.width;
+    const h = menuMascotCanvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const speedMult = isMouseOverMenuCanvas ? 1.4 : 1.0;
+    const hopY = Math.sin(menuMascotBounce * Math.PI) * 14;
+
+    function drawMiniZombie(x, baseY, scale, phase, type) {
+      ctx.save();
+      ctx.translate(x, baseY - hopY);
+      ctx.scale(scale, scale);
+
+      const runCycle = (timeMs * 0.008 * speedMult) + phase;
+      const legSwing = Math.sin(runCycle) * 14;
+      const bodyBob = Math.abs(Math.sin(runCycle * 2)) * 3.5;
+      const armSwing = -legSwing;
+
+      // Ground Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.beginPath();
+      ctx.ellipse(0, 4 + hopY * 0.4, 14, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Back Leg
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(-4 - legSwing * 0.3, -8 + bodyBob, 6, 12, 3);
+      ctx.fill();
+
+      // Back Arm
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.roundRect(-10 - armSwing * 0.4, -20 + bodyBob, 5, 10, 2);
+      ctx.fill();
+
+      // Torso / Jacket
+      ctx.fillStyle = type === 0 ? '#1e293b' : (type === 1 ? '#334155' : '#475569');
+      ctx.beginPath();
+      ctx.roundRect(-8, -24 + bodyBob, 16, 17, 4);
+      ctx.fill();
+
+      // Front Leg
+      ctx.fillStyle = '#334155';
+      ctx.beginPath();
+      ctx.roundRect(0 + legSwing * 0.3, -8 + bodyBob, 6, 12, 3);
+      ctx.fill();
+
+      // Head
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.roundRect(-11, -42 + bodyBob, 22, 19, 5);
+      ctx.fill();
+
+      // Headband for Leader
+      if (type === 0) {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(-11, -38 + bodyBob, 22, 4);
+        const tailWave = Math.sin(runCycle * 1.5) * 3;
+        ctx.fillRect(-15, -37 + bodyBob + tailWave, 5, 3);
+      }
+
+      // Flag for Scout
+      if (type === 1) {
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(8, -12 + bodyBob);
+        ctx.lineTo(8, -48 + bodyBob);
+        ctx.stroke();
+        const flagWave = Math.sin(runCycle * 2) * 2;
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.moveTo(8, -48 + bodyBob);
+        ctx.lineTo(24, -43 + bodyBob + flagWave);
+        ctx.lineTo(8, -38 + bodyBob);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Eyes
+      const blink = Math.sin(timeMs * 0.002 + phase) > 0.96;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      if (blink) {
+        ctx.fillRect(-2, -34 + bodyBob, 5, 2);
+        ctx.fillRect(4, -34 + bodyBob, 5, 2);
+      } else {
+        ctx.arc(0, -33 + bodyBob, 3.5, 0, Math.PI * 2);
+        ctx.arc(6, -33 + bodyBob, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.beginPath();
+        ctx.arc(1.5, -33 + bodyBob, 1.8, 0, Math.PI * 2);
+        ctx.arc(7.5, -33 + bodyBob, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Mouth
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(1, -27 + bodyBob, 6, 3, 1);
+      ctx.fill();
+
+      // Front Arm
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.roundRect(6 + armSwing * 0.4, -20 + bodyBob, 5, 10, 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    const groundBase = 92;
+    drawMiniZombie(100, groundBase, 0.95, 2.1, 2);
+    drawMiniZombie(180, groundBase, 1.18, 0.0, 0);
+    drawMiniZombie(260, groundBase, 1.0, 1.2, 1);
+
+    // Comic speech bubble
+    if (menuMascotSpeechTimer > 0 && menuMascotSpeech) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(21, 24, 30, 0.96)';
+      ctx.strokeStyle = '#2ecc71';
+      ctx.lineWidth = 1.5;
+      ctx.font = "700 12px 'Outfit', 'Noto Sans SC', sans-serif";
+      const textW = ctx.measureText(menuMascotSpeech).width;
+      const bw = textW + 20;
+      const bh = 24;
+      const bx = Math.max(10, Math.min(w - bw - 10, 180 - bw / 2));
+      const by = 8;
+
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(176, by + bh);
+      ctx.lineTo(180, by + bh + 5);
+      ctx.lineTo(184, by + bh);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#2ecc71';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(menuMascotSpeech, bx + bw / 2, by + bh / 2);
+      ctx.restore();
+    }
+  }
+
+  if (menuMascotCanvas) {
+    menuMascotCanvas.addEventListener('mouseenter', () => {
+      isMouseOverMenuCanvas = true;
+    });
+    menuMascotCanvas.addEventListener('mouseleave', () => {
+      isMouseOverMenuCanvas = false;
+    });
+    menuMascotCanvas.addEventListener('click', () => {
+      menuMascotPokeCount++;
+      menuMascotBounce = 1.0;
+      menuMascotSpeech = menuMascotQuotes[menuMascotPokeCount % menuMascotQuotes.length];
+      menuMascotSpeechTimer = 2.5;
       audio.playScoreRoll();
     });
   }
@@ -642,9 +851,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (screen !== shopModal && shopUI) {
       shopUI.stopMerchantAnimation();
     }
+    if (screen !== mainMenuScreen) {
+      stopMenuMascotAnimation();
+    }
 
     if (screen) {
       screen.style.display = 'flex';
+      if (screen === mainMenuScreen) {
+        startMenuMascotAnimation();
+      }
     }
   }
 
@@ -933,6 +1148,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   biomeManager.reset();
 
   // Initial stats & log
+  showScreen(mainMenuScreen);
   updateMenuStats();
   logger.system('僵尸狂潮 PC 全屏极速版系统就绪');
 });
