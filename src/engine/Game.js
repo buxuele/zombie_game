@@ -89,6 +89,7 @@ export class Game {
     this.feverTimer = 0;
     this.isRunning = true;
     this.isPaused = false;
+    this.lastNotifiedRoadStyle = 'CITY';
     this.lastTime = performance.now();
 
     logger.info(`游戏启动, 初始速度: ${this.initialSpeed} px/s, 军团初始人数: ${startZombies}`);
@@ -200,6 +201,13 @@ export class Game {
     // Dynamic adaptive background soundtrack switching based on active biome
     const activeRoadStyle = biomeManager.getRoadStyleAt(leader.x);
     audio.setBgmTheme(activeRoadStyle);
+
+    if (this.lastNotifiedRoadStyle && activeRoadStyle !== this.lastNotifiedRoadStyle) {
+      const activeZone = biomeManager.zones.find(z => leader.x >= z.startX && leader.x <= z.endX);
+      const zoneName = activeZone ? activeZone.theme.name : '新场景';
+      this.floatingText.spawn(640, 160, `已抵达新场景: ${zoneName}`, '#f1c40f', 28, 2.2);
+      this.lastNotifiedRoadStyle = activeRoadStyle;
+    }
 
     this.particles.update(dt, this.renderer.camera.renderX);
     this.floatingText.update(dt);

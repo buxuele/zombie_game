@@ -8,7 +8,9 @@ export const THEME_SKY_GRADIENTS = {
   SUNSET: ['#1e1b4b', '#4c0519', '#831843', '#f97316'],
   CYBER: ['#050814', '#0d1326', '#1a2238', '#0b0f19'],
   SCI_FI: ['#0a192f', '#0f2b48', '#173a5e', '#0b1d30'],
-  FOREST: ['#061a14', '#0c2e24', '#134e3f', '#0a231b']
+  FOREST: ['#061a14', '#0c2e24', '#134e3f', '#0a231b'],
+  LOTUS: ['#042f2e', '#0f766e', '#14b8a6', '#2dd4bf'],
+  CASTLE: ['#0284c7', '#38bdf8', '#7dd3fc', '#e0f2fe']
 };
 
 export class BiomeManager {

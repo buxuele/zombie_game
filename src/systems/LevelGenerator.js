@@ -1,6 +1,7 @@
 import { Vehicle } from '../entities/Vehicle.js';
 import { Civilian } from '../entities/Civilian.js';
 import { Coin, Bomb, MysteryBox } from '../entities/Obstacle.js';
+import { Critter } from '../entities/Critter.js';
 import { biomeManager } from './BiomeManager.js';
 import { GAME_CONFIG } from '../config/GameConfig.js';
 
@@ -13,6 +14,7 @@ export class LevelGenerator {
     this.coins = [];
     this.bombs = [];
     this.mysteryBoxes = [];
+    this.critters = [];
     this.puddles = [];
     this.manholes = [];
 
@@ -29,6 +31,10 @@ export class LevelGenerator {
     this.coins = [];
     this.bombs = [];
     this.mysteryBoxes = [];
+    this.critters = [
+      new Critter(780, this.groundY, 'RABBIT'),
+      new Critter(1350, this.groundY, 'CAT')
+    ];
     this.puddles = [
       { x: 900, width: 80 },
       { x: 2200, width: 110 }
@@ -91,6 +97,10 @@ export class LevelGenerator {
 
     for (const civ of this.civilians) {
       civ.update(dt, particleSystem, this);
+    }
+
+    for (const critter of this.critters) {
+      critter.update(dt, leaderX, this);
     }
   }
 
@@ -183,6 +193,13 @@ export class LevelGenerator {
         }
         cursorX += count * 36 + 140;
       }
+
+      // Random funny ambient critters hopping around on the platform
+      if (Math.random() > 0.45) {
+        const critterType = Math.random() > 0.5 ? 'RABBIT' : 'CAT';
+        const critterX = cursorX + 60 + Math.random() * 80;
+        this.critters.push(new Critter(critterX, this.groundY, critterType));
+      }
     }
   }
 
@@ -193,6 +210,7 @@ export class LevelGenerator {
     this.coins = this.coins.filter(c => c.x + c.width >= minX && !c.collected);
     this.bombs = this.bombs.filter(b => b.x + b.width >= minX && b.alive);
     this.mysteryBoxes = this.mysteryBoxes.filter(m => m.x + m.width >= minX && !m.collected);
+    this.critters = this.critters.filter(c => c.x + 200 >= minX);
     this.puddles = this.puddles.filter(p => p.x + p.width >= minX);
     this.manholes = this.manholes.filter(m => m.x >= minX);
   }
@@ -361,6 +379,55 @@ export class LevelGenerator {
             ctx.fillRect(dx - cameraX, this.groundY + 48, dashWidth, 5);
           }
         }
+      } else if (roadStyle === 'LOTUS') {
+        // High-Contrast Lotus Pond Jade Slate (Contrasting with Lotus Lilypads)
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        roadGrad.addColorStop(0, '#334e48');
+        roadGrad.addColorStop(0.25, '#223530');
+        roadGrad.addColorStop(1, '#14221e');
+        ctx.fillStyle = roadGrad;
+        ctx.fillRect(renderX, this.groundY, width, 180);
+
+        // White Jade Balustrade Curb Highlight
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(renderX, this.groundY, width, 2.5);
+        ctx.fillStyle = '#6ee7b7';
+        ctx.fillRect(renderX, this.groundY + 2.5, width, 2);
+
+        // Water Ripple Slate Joints
+        ctx.fillStyle = '#172824';
+        for (let dx = plat.startX; dx < plat.endX; dx += 36) {
+          ctx.fillRect(dx - cameraX, this.groundY + 5, 2, 175);
+        }
+
+        // Emerald Water Glow Center Guidance
+        ctx.fillStyle = '#34d399';
+        const dashWidth = 42;
+        const dashGap = 42;
+        const startOffset = Math.floor(plat.startX / (dashWidth + dashGap)) * (dashWidth + dashGap);
+        for (let dx = startOffset; dx < plat.endX; dx += dashWidth + dashGap) {
+          if (dx >= plat.startX && dx + dashWidth <= plat.endX) {
+            ctx.fillRect(dx - cameraX, this.groundY + 48, dashWidth, 4.5);
+          }
+        }
+      } else if (roadStyle === 'CASTLE') {
+        // European Castle Red Brick Pathway
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        roadGrad.addColorStop(0, '#4a251e');
+        roadGrad.addColorStop(0.25, '#2e1511');
+        roadGrad.addColorStop(1, '#1a0a07');
+        ctx.fillStyle = roadGrad;
+        ctx.fillRect(renderX, this.groundY, width, 180);
+
+        // Golden Timber Fence Curb
+        ctx.fillStyle = '#fde68a';
+        ctx.fillRect(renderX, this.groundY, width, 3);
+        ctx.fillStyle = '#d97706';
+        ctx.fillRect(renderX, this.groundY + 3, width, 2);
+
+        // White Carriage Guideline
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(renderX, this.groundY + 48, width, 3);
       } else {
         // Desert Blacktop Expressway (Deep Black Asphalt Slicing Through Golden/Sunset Sand)
         const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
@@ -415,6 +482,7 @@ export class LevelGenerator {
     for (const m of this.mysteryBoxes) m.draw(ctx, cameraX);
     for (const bomb of this.bombs) bomb.draw(ctx, cameraX);
     for (const civ of this.civilians) civ.draw(ctx, cameraX);
+    for (const critter of this.critters) critter.draw(ctx, cameraX);
     for (const v of this.vehicles) v.draw(ctx, cameraX);
   }
 

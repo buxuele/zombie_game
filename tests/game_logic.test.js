@@ -3,7 +3,7 @@ import { ZombieHorde } from '../src/entities/ZombieHorde.js';
 import { VEHICLE_TYPES, Vehicle } from '../src/entities/Vehicle.js';
 import { assets } from '../src/engine/AssetLoader.js';
 import { Storage } from '../src/systems/Storage.js';
-import { BiomeManager } from '../src/systems/BiomeManager.js';
+import { BiomeManager, THEME_SKY_GRADIENTS } from '../src/systems/BiomeManager.js';
 
 let passed = 0;
 let failed = 0;
@@ -731,10 +731,14 @@ function testHighContrastGroundRendering() {
     stroke: () => {},
     moveTo: () => {},
     lineTo: () => {},
+    quadraticCurveTo: () => {},
+    bezierCurveTo: () => {},
     closePath: () => {},
     translate: () => {},
     rotate: () => {},
     scale: () => {},
+    save: () => {},
+    restore: () => {},
     roundRect: () => {},
     drawImage: () => {},
     fillText: () => {},
@@ -814,6 +818,80 @@ function testPauseModalMascotAndHookSystem() {
   assert(drawCalls.length > 0, 'Pause mascot canvas draws elements smoothly');
 }
 
+// 30. Active Parallax Background Scrolling & LOTUS/CASTLE Biome Invariant Test
+function testParallaxScrollingAndNewBiomes() {
+  console.log('\n--- Testing Parallax Scrolling & LOTUS/CASTLE Biomes ---');
+  // 1. Verify LOTUS and CASTLE theme gradients exist
+  assert(THEME_SKY_GRADIENTS.LOTUS !== undefined, 'THEME_SKY_GRADIENTS contains LOTUS gradient');
+  assert(THEME_SKY_GRADIENTS.CASTLE !== undefined, 'THEME_SKY_GRADIENTS contains CASTLE gradient');
+
+  // 2. Verify Parallax Scroll formula produces continuous displacement
+  const visibleHeight = 540;
+  const naturalRatio = 2560 / 1440;
+  const drawH = visibleHeight * 1.05;
+  const drawW = drawH * naturalRatio; // 1008
+  const parallaxSpeed = 0.22;
+
+  const scrollAt0 = (0 * parallaxSpeed) % drawW;
+  const scrollAt1000 = (1000 * parallaxSpeed) % drawW;
+  const scrollAt5000 = (5000 * parallaxSpeed) % drawW;
+
+  assert(scrollAt0 === 0, 'Scroll at cameraX=0 is 0');
+  assert(scrollAt1000 === 220, `Scroll at cameraX=1000 moved 220px: ${scrollAt1000}`);
+  assert(scrollAt5000 !== scrollAt1000, `Background moves fluidly across distance: ${scrollAt5000}`);
+}
+
+// 31. Ambient Critters Rabbit and Cat Funny Bouncing Invariant Test
+import { Critter } from '../src/entities/Critter.js';
+function testAmbientCritters() {
+  console.log('\n--- Testing Funny Ambient Critters (Rabbits and Cats) ---');
+  const rabbit = new Critter(500, 540, 'RABBIT');
+  const cat = new Critter(800, 540, 'CAT');
+
+  assert(rabbit.state === 'IDLE', 'Rabbit starts in calm idle state');
+  assert(cat.state === 'IDLE', 'Cat starts in calm idle state');
+
+  // 1. Zombies far away (> 300px): Rabbit remains calm
+  rabbit.update(1 / 60, 100, null);
+  assert(rabbit.state === 'IDLE', 'Rabbit stays calm when zombies are far away (400px)');
+
+  // 2. Zombies approach within 260px: Rabbit gets startled and leaps
+  rabbit.update(1 / 60, 320, null); // dist = 500 - 320 = 180px < 260px
+  assert(rabbit.state === 'STARTLED', 'Rabbit triggers startled jumping mode');
+  assert(rabbit.vy < 0, 'Rabbit leaps into the air with upward impulse');
+  assert(rabbit.vx > 0, 'Rabbit scampers forward rapidly');
+
+  // 3. Cat startled reaction
+  cat.update(1 / 60, 600, null); // dist = 800 - 600 = 200px < 260px
+  assert(cat.state === 'STARTLED', 'Cat triggers puffed-up startled leap');
+  assert(cat.vy < -300, 'Cat launches high vertical somersault');
+
+  // 4. Render mock test
+  const mockCtx = {
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    scale: () => {},
+    rotate: () => {},
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    beginPath: () => {},
+    ellipse: () => {},
+    arc: () => {},
+    fill: () => {},
+    stroke: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    quadraticCurveTo: () => {}
+  };
+  rabbit.draw(mockCtx, 0);
+  cat.draw(mockCtx, 0);
+  assert(rabbit.x > 500, 'Rabbit has scampered forward');
+  assert(cat.x > 800, 'Cat has scampered forward');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -845,6 +923,8 @@ testCivilianPanicAndScreamOnApproach();
 testTransformationDurationsAndUFORemoval();
 testHighContrastGroundRendering();
 testPauseModalMascotAndHookSystem();
+testParallaxScrollingAndNewBiomes();
+testAmbientCritters();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

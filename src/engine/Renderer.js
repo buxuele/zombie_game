@@ -94,41 +94,40 @@ export class Renderer {
       if (vz.alpha > 0.001) {
         this.ctx.save();
         this.ctx.globalAlpha = vz.alpha;
-        this.drawPanoramicBackground(vz.theme.img, vz.progress, vz.theme.roadStyle);
+        this.drawPanoramicBackground(vz.theme.img, cameraX, vz.theme.roadStyle);
         this.ctx.restore();
       }
     }
   }
 
-  // High-Res Progressive Panoramic Window (Scaled so ~95% height is fully visible, cropping only ~5% top/bottom)
-  drawPanoramicBackground(img, progress, biomeType = 'CITY') {
+  // Active High-Res Seamless Parallax Scrolling (Fluid motion across all backgrounds including lotus, castle, desert)
+  drawPanoramicBackground(img, cameraX, biomeType = 'CITY') {
     const validImg = (img && img.complete && img.naturalWidth > 0) ? img : (assets?.images?.cityBg || null);
     if (validImg && validImg.complete && validImg.naturalWidth > 0) {
       const visibleHeight = 540; // Road surface baseline
       const naturalRatio = validImg.naturalWidth / validImg.naturalHeight;
 
       // Scale height to fit visible viewport with only 5% total overflow (2.5% top, 2.5% bottom)
-      let drawH = visibleHeight * 1.05;
-      let drawW = drawH * naturalRatio;
+      const drawH = visibleHeight * 1.05;
+      const drawW = Math.max(this.width * 0.6, drawH * naturalRatio);
 
-      // Ensure width at least covers the screen width with slight margin
-      if (drawW < this.width * 1.05) {
-        drawW = this.width * 1.05;
-        drawH = drawW / naturalRatio;
-      }
-
-      const maxScrollX = Math.max(0, drawW - this.width);
-      const clampedProg = Math.max(0, Math.min(1, progress));
-      const renderX = -clampedProg * maxScrollX;
+      // Parallax scroll speed (0.22 provides continuous cinematic forward momentum)
+      const parallaxSpeed = 0.22;
+      const scrollOffset = (cameraX * parallaxSpeed) % drawW;
 
       // Center vertically so top and bottom are cropped symmetrically by only 2.5% each (total 5%)
       const renderY = -Math.max(0, (drawH - visibleHeight) * 0.5);
 
-      // Draw single crisp continuous panoramic image
-      this.ctx.drawImage(validImg, renderX, renderY, drawW, drawH);
+      // Seamless continuous tiling across viewport
+      let startX = -scrollOffset;
+      if (startX > 0) startX -= drawW;
+
+      for (let rx = startX; rx < this.width + drawW; rx += drawW) {
+        this.ctx.drawImage(validImg, rx, renderY, drawW, drawH);
+      }
     } else {
-      // High-End Flat Cartoon Vector Procedural Fallback (Clean, Zero AI artifact, Crisp Art)
-      this.drawProceduralVectorBackground(progress * 1000, biomeType);
+      // High-End Flat Cartoon Vector Procedural Fallback
+      this.drawProceduralVectorBackground(cameraX * 0.22, biomeType);
     }
   }
 

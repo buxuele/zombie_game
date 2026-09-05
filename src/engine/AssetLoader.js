@@ -86,10 +86,10 @@ export class AssetLoader {
     const remainingConfigs = [
       { id: 'beach', name: '热带海岸', files: ['/backgrounds/beach.webp', '/backgrounds/beach.jpg', '/images/beach_bg.jpg'], roadStyle: 'BEACH' },
       { id: 'desert', name: '黄金沙漠', files: ['/backgrounds/desert.webp', '/backgrounds/desert.jpg', '/images/desert_bg.jpg'], roadStyle: 'DESERT' },
-      { id: 'b1', name: '赛博霓虹都市', files: ['/backgrounds/b1.webp', '/backgrounds/b1.jpg'], roadStyle: 'CYBER' },
+      { id: 'b1', name: '中世纪古堡庄园', files: ['/backgrounds/b1.webp', '/backgrounds/b1.jpg'], roadStyle: 'CASTLE' },
       { id: 'b2', name: '日落晚霞峡谷', files: ['/backgrounds/b2.webp', '/backgrounds/b2.jpg'], roadStyle: 'SUNSET' },
       { id: 'b3', name: '未来科幻基地', files: ['/backgrounds/b3.webp', '/backgrounds/b3.jpg'], roadStyle: 'SCI_FI' },
-      { id: 'b4', name: '幽暗深渊森林', files: ['/backgrounds/b4.webp', '/backgrounds/b4.png'], roadStyle: 'FOREST' },
+      { id: 'b4', name: '清雅荷花池畔', files: ['/backgrounds/b4.webp', '/backgrounds/b4.png'], roadStyle: 'LOTUS' },
     ];
 
     await Promise.all(
