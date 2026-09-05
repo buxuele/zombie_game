@@ -5,8 +5,9 @@ const DEFAULT_DATA = {
   highScoreDistance: 0,
   upgrades: {
     startZombies: 1,      // 1 to 4
-    magnetRadius: 1,      // 1 to 5
-    transformDuration: 1  // 1 to 5
+    feverDuration: 1,     // 1 to 5
+    transformDuration: 1, // 1 to 5
+    coinMultiplier: 1     // 1 to 5
   },
   equippedHat: 'none',
   unlockedHats: ['none'],
@@ -68,6 +69,12 @@ export class Storage {
       return true;
     }
     return false;
+  }
+
+  claimReliefFund(amount = 150) {
+    this.data.totalCoins += amount;
+    this.save();
+    return this.data.totalCoins;
   }
 
   updateHighScore(distance) {

@@ -623,6 +623,8 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (btnHudSound) btnHudSound.textContent = soundText;
   }
 
+  let shopUI = null;
+
   function showScreen(screen) {
     mainMenuScreen.style.display = 'none';
     shopModal.style.display = 'none';
@@ -636,6 +638,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     if (screen !== pauseModal) {
       stopPauseMascotAnimation();
+    }
+    if (screen !== shopModal && shopUI) {
+      shopUI.stopMerchantAnimation();
     }
 
     if (screen) {
@@ -700,7 +705,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Initialize UI Managers
-  const shopUI = new ShopUI(
+  shopUI = new ShopUI(
     document.getElementById('shop-list-container'),
     () => updateMenuStats()
   );

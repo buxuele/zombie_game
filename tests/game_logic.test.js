@@ -2,7 +2,7 @@ import { Zombie } from '../src/entities/Zombie.js';
 import { ZombieHorde } from '../src/entities/ZombieHorde.js';
 import { VEHICLE_TYPES, Vehicle } from '../src/entities/Vehicle.js';
 import { assets } from '../src/engine/AssetLoader.js';
-import { Storage } from '../src/systems/Storage.js';
+import { Storage, storage } from '../src/systems/Storage.js';
 import { BiomeManager, THEME_SKY_GRADIENTS } from '../src/systems/BiomeManager.js';
 
 let passed = 0;
@@ -892,6 +892,65 @@ function testAmbientCritters() {
   assert(cat.x > 800, 'Cat has scampered forward');
 }
 
+// 32. Shop and Economy System Invariant Test
+import { UPGRADES_CATALOG, HATS_CATALOG } from '../src/systems/Shop.js';
+
+function testShopAndEconomySystem() {
+  console.log('\n--- Testing Shop & Economy System Invariants ---');
+
+  // 1. Catalog integrity
+  assert(UPGRADES_CATALOG.length === 4, 'UPGRADES_CATALOG contains 4 core upgrades');
+  const upgradeKeys = UPGRADES_CATALOG.map(u => u.key);
+  assert(upgradeKeys.includes('startZombies'), 'Catalog contains startZombies');
+  assert(upgradeKeys.includes('feverDuration'), 'Catalog contains feverDuration');
+  assert(upgradeKeys.includes('transformDuration'), 'Catalog contains transformDuration');
+  assert(upgradeKeys.includes('coinMultiplier'), 'Catalog contains coinMultiplier');
+
+  for (const up of UPGRADES_CATALOG) {
+    assert(!up.desc.includes('大脑'), `Upgrade ${up.key} description contains strictly no brain mention`);
+    assert(up.prices.length === up.maxLevel, `Upgrade ${up.key} has matching price tiers for all levels`);
+  }
+
+  // 2. Hats catalog
+  assert(HATS_CATALOG.length === 6, 'HATS_CATALOG contains 6 hats');
+  const hatIds = HATS_CATALOG.map(h => h.id);
+  assert(hatIds.includes('none'), 'Hats contains none');
+  assert(hatIds.includes('crown'), 'Hats contains crown');
+
+  // 3. Audio methods
+  assert(typeof audio.playUpgradeSuccess === 'function', 'audio.playUpgradeSuccess is a function');
+  assert(typeof audio.playBuyFail === 'function', 'audio.playBuyFail is a function');
+
+  // 4. Storage relief fund and coin economics
+  const s = new Storage();
+  s.data.totalCoins = 100;
+  const newTotal = s.claimReliefFund(150);
+  assert(newTotal === 250, 'claimReliefFund adds 150 coins: 250');
+  assert(s.data.totalCoins === 250, 'Storage totalCoins updated to 250');
+
+  // 5. Spend coins checks
+  assert(s.spendCoins(200) === true, 'spendCoins(200) succeeds when balance is 250');
+  assert(s.data.totalCoins === 50, 'Remaining balance is 50');
+  assert(s.spendCoins(100) === false, 'spendCoins(100) strictly fails when balance is 50');
+  assert(s.data.totalCoins === 50, 'Balance unchanged after failed spend');
+
+  // 6. Upgrades persistence
+  assert(s.getUpgradeLevel('coinMultiplier') === 1, 'coinMultiplier defaults to level 1');
+  s.setUpgradeLevel('coinMultiplier', 3);
+  assert(s.getUpgradeLevel('coinMultiplier') === 3, 'coinMultiplier level set to 3');
+
+  // 7. CollisionManager fever scaling test
+  storage.setUpgradeLevel('feverDuration', 3);
+  const mockGame = {
+    feverCombo: 7,
+    feverTimer: 0,
+    floatingText: { spawn: () => {} },
+    renderer: { camera: { addTrauma: () => {} } }
+  };
+  CollisionManager.triggerFeverCombo(mockGame, { x: 100, y: 100 });
+  assert(mockGame.feverTimer === 7.0, `feverTimer scaled by feverDuration level 3 to 7.0s: ${mockGame.feverTimer}`);
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -925,6 +984,7 @@ testHighContrastGroundRendering();
 testPauseModalMascotAndHookSystem();
 testParallaxScrollingAndNewBiomes();
 testAmbientCritters();
+testShopAndEconomySystem();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

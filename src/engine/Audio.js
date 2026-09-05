@@ -528,6 +528,53 @@ class AudioManager {
     osc.stop(now + 0.6);
   }
 
+  playUpgradeSuccess() {
+    if (!this.ctx || !storage.isSoundEnabled()) return;
+    this.init();
+    const now = this.ctx.currentTime;
+
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    notes.forEach((freq, idx) => {
+      const startTime = now + idx * 0.055;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, startTime);
+
+      gain.gain.setValueAtTime(0.2, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.005, startTime + 0.18);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+
+      osc.start(startTime);
+      osc.stop(startTime + 0.18);
+    });
+  }
+
+  playBuyFail() {
+    if (!this.ctx || !storage.isSoundEnabled()) return;
+    this.init();
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+
+    osc.start(now);
+    osc.stop(now + 0.15);
+  }
+
   setBgmTheme(theme) {
     let mappedTheme = 'CITY';
     if (theme === 'BEACH' || theme === 'SUNSET') {

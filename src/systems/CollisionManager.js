@@ -24,7 +24,14 @@ export class CollisionManager {
         if (z.alive && this.checkAABB(z, coin)) {
           coin.collect(game.particles, game.floatingText);
           const isGold = game.transformations.activeType === 'GOLD';
-          const multiplier = isGold ? 2 : 1;
+          const coinBoostLevel = storage.getUpgradeLevel('coinMultiplier');
+          let multiplier = isGold ? 2 : 1;
+          if (coinBoostLevel > 1 && Math.random() < (coinBoostLevel - 1) * 0.15) {
+            multiplier *= 2;
+            if (game.floatingText) {
+              game.floatingText.spawn(coin.x, coin.y - 20, '金币暴击 x2!', '#ffd700', 20, 0.8);
+            }
+          }
           game.sessionCoins += multiplier;
           storage.addCoins(multiplier);
           storage.updateMission('coins_collected', multiplier);
@@ -91,7 +98,8 @@ export class CollisionManager {
   static triggerFeverCombo(game, leader) {
     game.feverCombo++;
     if (game.feverCombo >= 8) {
-      game.feverTimer = 5.0;
+      const feverLevel = storage.getUpgradeLevel('feverDuration');
+      game.feverTimer = 4.0 + (feverLevel - 1) * 1.5;
       game.feverCombo = 0;
       audio.playFever();
       game.floatingText.spawn(leader.x + 40, leader.y - 40, '狂热暴走 FEVER!', '#f1c40f', 32, 1.5);

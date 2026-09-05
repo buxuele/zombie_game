@@ -87,15 +87,33 @@
 
       <!-- Shop Modal -->
       <div id="shop-modal" class="screen-overlay" style="display: none;">
-        <div class="modal-panel">
+        <div class="modal-panel shop-modal-panel">
           <div class="modal-header">
-            <div class="modal-title">基因与补给商店</div>
-            <button id="btn-close-shop" class="modal-close-btn">返回</button>
+            <div class="modal-title">基因与补给黑市</div>
+            <div class="shop-header-actions">
+              <div class="shop-wallet-badge">
+                <span class="wallet-label">金币余额:</span>
+                <span id="shop-wallet-coins" class="wallet-amount">0</span>
+              </div>
+              <button id="btn-shop-relief" class="btn btn-gold btn-relief">救济金 +150</button>
+              <button id="btn-close-shop" class="modal-close-btn">返回</button>
+            </div>
+          </div>
+
+          <!-- Merchant Interactive Panel -->
+          <div id="shop-merchant-bar" class="shop-merchant-bar">
+            <div class="shop-merchant-avatar-wrap">
+              <canvas id="shop-merchant-canvas" width="64" height="64"></canvas>
+            </div>
+            <div class="shop-merchant-speech-box">
+              <div id="shop-speech-text" class="shop-speech-text">客官里面请！全场神级基因，童叟无欺！</div>
+              <div class="shop-speech-sub">戳戳掌柜听八卦，点击属性立即升级</div>
+            </div>
           </div>
 
           <div class="shop-tabs">
-            <button class="shop-tab active" data-tab="upgrades">属性升级</button>
-            <button class="shop-tab" data-tab="hats">个性装扮</button>
+            <button class="shop-tab active" data-tab="upgrades">属性基因升级</button>
+            <button class="shop-tab" data-tab="hats">个性装扮试穿</button>
           </div>
 
           <div id="shop-list-container" class="shop-list">

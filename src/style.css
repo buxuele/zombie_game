@@ -393,20 +393,110 @@ body {
 }
 
 /* Shop Modal */
+.shop-modal-panel {
+  max-width: 620px;
+}
+
+.shop-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shop-wallet-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-btn);
+  padding: 6px 12px;
+}
+
+.shop-wallet-badge .wallet-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.shop-wallet-badge .wallet-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.btn-relief {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+}
+
+.shop-merchant-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.shop-merchant-avatar-wrap {
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shop-merchant-speech-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.shop-speech-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.shop-speech-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.speech-pop {
+  animation: speech-pop-anim 0.25s ease-out;
+}
+
+@keyframes speech-pop-anim {
+  0% { transform: scale(0.96); opacity: 0.7; }
+  100% { transform: scale(1.0); opacity: 1; }
+}
+
 .shop-tabs {
   display: flex;
   gap: 10px;
   border-bottom: 1px solid var(--border-subtle);
   padding-bottom: 12px;
+  margin-bottom: 12px;
 }
 
 .shop-tab {
   background: none;
   border: 1px solid transparent;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: var(--radius-btn);
   cursor: pointer;
 }
@@ -420,10 +510,39 @@ body {
 .shop-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   max-height: 380px;
   overflow-y: auto;
   padding-right: 6px;
+}
+
+.shop-fitting-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 8px 16px;
+  margin-bottom: 6px;
+}
+
+.shop-fitting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shop-fitting-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.shop-fitting-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 .shop-item-card {
@@ -433,17 +552,17 @@ body {
   background-color: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
-  padding: 16px 20px;
+  padding: 12px 18px;
 }
 
 .shop-item-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .shop-item-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-main);
 }
@@ -453,10 +572,61 @@ body {
   color: var(--text-muted);
 }
 
-.shop-item-level {
+.shop-stat-preview {
   font-size: 11px;
-  color: var(--accent-gold);
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.shop-stat-preview .stat-next {
+  color: #2ecc71;
   font-weight: 600;
+}
+
+.shop-level-pips {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.shop-level-pips .pip {
+  width: 16px;
+  height: 5px;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-subtle);
+}
+
+.shop-level-pips .pip.active {
+  background: #f1c40f;
+  border-color: #f39c12;
+  box-shadow: 0 0 6px rgba(241, 196, 15, 0.5);
+}
+
+.shop-item-action {
+  flex-shrink: 0;
+}
+
+.btn-need-coins {
+  background-color: rgba(217, 119, 6, 0.15) !important;
+  border: 1px solid #d97706 !important;
+  color: #fbbf24 !important;
+  cursor: pointer !important;
+}
+
+.btn-need-coins:hover {
+  background-color: rgba(217, 119, 6, 0.25) !important;
+}
+
+@keyframes shop-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.shop-card-shake {
+  animation: shop-shake 0.35s ease;
 }
 
 /* Scratch Card Modal */
