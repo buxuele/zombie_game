@@ -175,10 +175,8 @@ export class Game {
       this.horde.cutJump();
     }
 
-    const isLevitating = this.transformations.activeType === 'UFO';
-
     this.transformations.update(dt, this.gameSpeed, this.horde, this.particles, this.renderer.camera, this.groundY);
-    this.horde.update(dt, this.gameSpeed, this.gravity, this.level, this.input.isHoldingJump, this.particles, isLevitating);
+    this.horde.update(dt, this.gameSpeed, this.gravity, this.level, this.input.isHoldingJump, this.particles, false);
     this.level.update(leader.x, dt, this.particles);
 
     for (const p of this.level.puddles) {

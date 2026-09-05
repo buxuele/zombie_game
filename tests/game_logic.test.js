@@ -686,6 +686,67 @@ function testCivilianPanicAndScreamOnApproach() {
   assert(civ.alive === true, 'Panicking civilian renders flailing and screaming visuals safely without error');
 }
 
+// 27. Transformation Durations & UFO Removal Invariant Test
+import { TRANSFORMATION_TYPES } from '../src/entities/Transformations.js';
+function testTransformationDurationsAndUFORemoval() {
+  console.log('\n--- Testing Transformations & UFO Removal Invariant ---');
+  // 1. UFO strictly removed from transformation pool
+  assert(TRANSFORMATION_TYPES.UFO === undefined, 'UFO is strictly removed from TRANSFORMATION_TYPES');
+  assert(!Object.keys(TRANSFORMATION_TYPES).includes('UFO'), 'TRANSFORMATION_TYPES keys do not contain UFO');
+
+  // 2. Tsunami duration reduced to 70% (10s -> 7s)
+  assert(TRANSFORMATION_TYPES.TSUNAMI.duration === 7, `Tsunami duration reduced to 70% (7s): ${TRANSFORMATION_TYPES.TSUNAMI.duration}`);
+
+  // 3. Dragon duration reduced to 70% (5s -> 3.5s)
+  assert(TRANSFORMATION_TYPES.DRAGON.duration === 3.5, `Dragon duration reduced to 70% (3.5s): ${TRANSFORMATION_TYPES.DRAGON.duration}`);
+
+  // 4. Other transformations remain intact
+  assert(TRANSFORMATION_TYPES.NINJA.duration === 9, 'Ninja duration remains 9s');
+  assert(TRANSFORMATION_TYPES.QUARTERBACK.duration === 8, 'Quarterback duration remains 8s');
+  assert(TRANSFORMATION_TYPES.GOLD.duration === 8, 'Gold rush duration remains 8s');
+}
+
+// 28. High-Contrast Ground Rendering Across Biomes Invariant Test
+function testHighContrastGroundRendering() {
+  console.log('\n--- Testing High-Contrast Ground Road Palettes ---');
+  const lg = new LevelGenerator(540);
+  lg.generateChunk(6000);
+
+  // Mock 2D context to verify ground road drawing without crash
+  const calls = [];
+  const fakeCtx = {
+    createLinearGradient: () => ({
+      addColorStop: (offset, color) => calls.push({ type: 'stop', offset, color })
+    }),
+    fillStyle: '',
+    fillRect: (x, y, w, h) => calls.push({ type: 'fillRect', x, y, w, h }),
+    save: () => {},
+    restore: () => {},
+    beginPath: () => {},
+    rect: () => {},
+    clip: () => {},
+    ellipse: () => {},
+    arc: () => {},
+    fill: () => {},
+    stroke: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    translate: () => {},
+    rotate: () => {},
+    scale: () => {},
+    roundRect: () => {},
+    drawImage: () => {},
+    fillText: () => {},
+    strokeStyle: '',
+    lineWidth: 1
+  };
+
+  assert(lg.platforms.length > 0, 'Platforms generated successfully');
+  lg.draw(fakeCtx, 0);
+  assert(calls.length > 0, 'Ground platforms rendered successfully with high-contrast styles');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -714,6 +775,8 @@ testBombMultiCasualtyRadius();
 testVehicleSpriteRenderPriority();
 testOnDemandBackgroundLoading();
 testCivilianPanicAndScreamOnApproach();
+testTransformationDurationsAndUFORemoval();
+testHighContrastGroundRendering();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

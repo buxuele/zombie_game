@@ -271,8 +271,6 @@ export class Renderer {
       ambientColor = 'rgba(142, 68, 173, 0.20)';
     } else if (transformType === 'QUARTERBACK') {
       ambientColor = 'rgba(230, 126, 34, 0.20)';
-    } else if (transformType === 'UFO') {
-      ambientColor = 'rgba(26, 188, 156, 0.18)';
     }
 
     if (ambientColor) {

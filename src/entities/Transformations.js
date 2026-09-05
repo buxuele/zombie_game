@@ -6,7 +6,7 @@ export const TRANSFORMATION_TYPES = {
     id: 'TSUNAMI',
     name: '海啸巨浪',
     color: '#3498db',
-    duration: 10
+    duration: 7
   },
   NINJA: {
     id: 'NINJA',
@@ -20,12 +20,6 @@ export const TRANSFORMATION_TYPES = {
     color: '#e67e22',
     duration: 8
   },
-  UFO: {
-    id: 'UFO',
-    name: '外星飞碟',
-    color: '#1abc9c',
-    duration: 10
-  },
   GOLD: {
     id: 'GOLD',
     name: '黄金狂潮',
@@ -36,7 +30,7 @@ export const TRANSFORMATION_TYPES = {
     id: 'DRAGON',
     name: '东方神龙',
     color: '#e74c3c',
-    duration: 5
+    duration: 3.5
   }
 };
 
@@ -160,8 +154,6 @@ export class TransformationManager {
       this.drawTsunamiWave(ctx, renderX, groundY);
     } else if (this.activeType === 'DRAGON') {
       this.drawDragon(ctx, renderX, leader.y, horde, cameraX);
-    } else if (this.activeType === 'UFO') {
-      this.drawUFO(ctx, renderX, leader.y);
     }
   }
 
@@ -463,33 +455,5 @@ export class TransformationManager {
       ctx.fill();
     }
 
-    ctx.restore();
-  }
-
-  drawUFO(ctx, renderX, leaderY) {
-    ctx.save();
-    const ufoX = renderX + 40;
-    const ufoY = leaderY - 100 + Math.sin(this.wavePhase) * 10;
-
-    ctx.fillStyle = 'rgba(26, 188, 156, 0.25)';
-    ctx.beginPath();
-    ctx.moveTo(ufoX - 15, ufoY + 15);
-    ctx.lineTo(ufoX - 90, ufoY + 220);
-    ctx.lineTo(ufoX + 90, ufoY + 220);
-    ctx.lineTo(ufoX + 15, ufoY + 15);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = '#7f8c8d';
-    ctx.beginPath();
-    ctx.ellipse(ufoX, ufoY, 50, 16, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#1abc9c';
-    ctx.beginPath();
-    ctx.arc(ufoX, ufoY - 4, 22, Math.PI, 0);
-    ctx.fill();
-
-    ctx.restore();
   }
 }
