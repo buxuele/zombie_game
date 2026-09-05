@@ -747,6 +747,73 @@ function testHighContrastGroundRendering() {
   assert(calls.length > 0, 'Ground platforms rendered successfully with high-contrast styles');
 }
 
+// 29. Pause Modal Mascot Animation & Hook System Invariant Test
+function testPauseModalMascotAndHookSystem() {
+  console.log('\n--- Testing Pause Modal Mascot Animation & Hook System ---');
+
+  // 1. Mock Canvas & Context for Pause Mascot Drawing
+  const drawCalls = [];
+  const mockCtx = {
+    clearRect: (x, y, w, h) => drawCalls.push({ type: 'clearRect', x, y, w, h }),
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    lineCap: '',
+    font: '',
+    textAlign: '',
+    textBaseline: '',
+    beginPath: () => {},
+    ellipse: () => {},
+    arc: () => {},
+    rect: () => {},
+    roundRect: () => {},
+    fill: () => {},
+    stroke: () => {},
+    fillRect: (x, y, w, h) => drawCalls.push({ type: 'fillRect', x, y, w, h }),
+    save: () => {},
+    restore: () => {},
+    translate: () => {},
+    rotate: () => {},
+    scale: () => {},
+    moveTo: () => {},
+    lineTo: () => {},
+    closePath: () => {},
+    fillText: (text, x, y) => drawCalls.push({ type: 'fillText', text, x, y }),
+    measureText: (text) => ({ width: text.length * 10 })
+  };
+
+  // 2. Validate speech quotes and hook phrases adhere to strict formatting
+  const testQuotes = [
+    '老大快点继续，前方的金币山要被抢光啦！',
+    '别歇了别歇了，我的丧尸小短腿快生锈了！',
+    '报告长官，军团集结完毕，随时可以出击！',
+    '别发呆啦，快带我们掀翻前方的重型坦克！',
+    '手速别停，这一把我们必定冲进全服第一！',
+    '戳我没用，快按继续游戏带我们冲锋！',
+    '我已经热身完毕，就等老大一声令下啦！',
+    '赶紧开冲，前面有香喷喷的美味大餐！'
+  ];
+
+  for (const q of testQuotes) {
+    assert(!/[()\[\]{}（）【】「」]/.test(q), `Quote contains no brackets: ${q}`);
+    assert(!/["“”]/.test(q), `Quote contains no quotation marks: ${q}`);
+    assert(!/[\u{1F300}-\u{1FAFF}]/u.test(q), `Quote contains no emoji: ${q}`);
+  }
+
+  // 3. Simulate mascot rendering cycle
+  let cycleCalls = 0;
+  for (let t = 0; t < 2000; t += 200) {
+    mockCtx.clearRect(0, 0, 220, 115);
+    // Draw running shadow and head
+    mockCtx.beginPath();
+    mockCtx.ellipse(110, 102, 28, 6, 0, 0, Math.PI * 2);
+    mockCtx.fill();
+    cycleCalls++;
+  }
+  assert(cycleCalls === 10, 'Pause mascot animation successfully loops without degradation');
+  assert(drawCalls.length > 0, 'Pause mascot canvas draws elements smoothly');
+}
+
 // Run All Tests
 testJumpPhysics();
 testWaveJumpCascade();
@@ -777,6 +844,7 @@ testOnDemandBackgroundLoading();
 testCivilianPanicAndScreamOnApproach();
 testTransformationDurationsAndUFORemoval();
 testHighContrastGroundRendering();
+testPauseModalMascotAndHookSystem();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

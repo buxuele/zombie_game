@@ -148,13 +148,46 @@
 
       <!-- Pause Screen -->
       <div id="pause-modal" class="screen-overlay" style="display: none;">
-        <div class="modal-panel" style="width: 360px; text-align: center;">
-          <div class="modal-title" style="margin-bottom: 20px;">游戏暂停</div>
+        <div class="modal-panel pause-panel" style="width: 380px; text-align: center;">
+          <!-- Interactive Workout Zombie Mascot Canvas -->
+          <div class="pause-mascot-wrapper">
+            <canvas id="pause-mascot-canvas" width="220" height="115"></canvas>
+            <div id="pause-mascot-hint" class="pause-mascot-hint">戳一下迫不及待的小僵尸</div>
+          </div>
+
+          <div class="pause-header-row">
+            <div class="modal-title pause-title">战术休整中</div>
+            <div class="pause-status-badge">全军待命</div>
+          </div>
+
+          <!-- Current Battle Status Snapshot -->
+          <div class="pause-status-card">
+            <div class="pause-stat-item">
+              <div class="pause-stat-label">军团集结</div>
+              <div id="pause-stat-horde" class="pause-stat-val">1 丧尸</div>
+            </div>
+            <div class="pause-stat-divider"></div>
+            <div class="pause-stat-item">
+              <div class="pause-stat-label">奔跑距离</div>
+              <div id="pause-stat-dist" class="pause-stat-val">0 m</div>
+            </div>
+            <div class="pause-stat-divider"></div>
+            <div class="pause-stat-item">
+              <div class="pause-stat-label">金币收益</div>
+              <div id="pause-stat-coins" class="pause-stat-val">0</div>
+            </div>
+          </div>
+
+          <div id="pause-hook-banner" class="pause-hook-banner">
+            前方发现满载幸存者的大巴，立即继续发起冲锋！
+          </div>
+
           <div class="pause-menu">
-            <button id="btn-resume-game" class="btn btn-primary">继续游戏</button>
+            <button id="btn-resume-game" class="btn btn-primary btn-pulse-action">继续游戏</button>
             <button id="btn-toggle-sound-pause" class="btn">声音 开</button>
             <button id="btn-quit-to-menu" class="btn btn-danger">退出至主菜单</button>
           </div>
+          <div class="pause-shortcut-hint">按 空格键 或 回车键 立即重返战场</div>
         </div>
       </div>
 

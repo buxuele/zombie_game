@@ -45,6 +45,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const btnToggleSoundMenu = document.getElementById('btn-toggle-sound-menu');
   const btnToggleSoundPause = document.getElementById('btn-toggle-sound-pause');
 
+  // Pause Modal Elements
+  const pauseMascotCanvas = document.getElementById('pause-mascot-canvas');
+  const pauseMascotHint = document.getElementById('pause-mascot-hint');
+  const pauseStatHorde = document.getElementById('pause-stat-horde');
+  const pauseStatDist = document.getElementById('pause-stat-dist');
+  const pauseStatCoins = document.getElementById('pause-stat-coins');
+  const pauseHookBanner = document.getElementById('pause-hook-banner');
+
   // Game Over Elements
   const goDistance = document.getElementById('go-distance');
   const goCoins = document.getElementById('go-coins');
@@ -267,6 +275,317 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Interactive Workout and Impatient Mascot on Pause Screen
+  let pauseMascotPokeCount = 0;
+  let pauseMascotBounce = 0;
+  let pauseMascotSpeech = '';
+  let pauseMascotSpeechTimer = 0;
+  let pauseMascotAnimId = null;
+  let pauseMascotMouseX = 110;
+  let pauseMascotMouseY = 60;
+  let isMouseOverPauseCanvas = false;
+
+  const pauseMascotQuotes = [
+    '老大快点继续，前方的金币山要被抢光啦！',
+    '别歇了别歇了，我的丧尸小短腿快生锈了！',
+    '报告长官，军团集结完毕，随时可以出击！',
+    '别发呆啦，快带我们掀翻前方的重型坦克！',
+    '手速别停，这一把我们必定冲进全服第一！',
+    '戳我没用，快按继续游戏带我们冲锋！',
+    '我已经热身完毕，就等老大一声令下啦！',
+    '赶紧开冲，前面有香喷喷的美味大餐！'
+  ];
+
+  const pauseHookPhrases = [
+    '前方发现满载幸存者的大巴，立即继续发起冲锋！',
+    '当前军团状态绝佳，距离下一大生态场景仅剩最后冲刺！',
+    '军团气势正旺，前方路面大批宝箱金币等待掠夺！',
+    '再感染几名幸存者，即可积攒足够力量掀翻重型坦克！',
+    '保持高能冲刺状态，本局极有希望刷新最高里程纪录！'
+  ];
+
+  function startPauseMascotAnimation() {
+    if (pauseMascotAnimId) cancelAnimationFrame(pauseMascotAnimId);
+    let lastT = performance.now();
+
+    function loop(now) {
+      const dt = Math.min(0.05, (now - lastT) / 1000);
+      lastT = now;
+
+      if (pauseMascotBounce > 0) {
+        pauseMascotBounce = Math.max(0, pauseMascotBounce - dt * 3.5);
+      }
+      if (pauseMascotSpeechTimer > 0) {
+        pauseMascotSpeechTimer -= dt;
+      }
+
+      renderPauseMascot(now);
+      pauseMascotAnimId = requestAnimationFrame(loop);
+    }
+    pauseMascotAnimId = requestAnimationFrame(loop);
+  }
+
+  function stopPauseMascotAnimation() {
+    if (pauseMascotAnimId) {
+      cancelAnimationFrame(pauseMascotAnimId);
+      pauseMascotAnimId = null;
+    }
+  }
+
+  function renderPauseMascot(timeMs) {
+    if (!pauseMascotCanvas) return;
+    const ctx = pauseMascotCanvas.getContext('2d');
+    const w = pauseMascotCanvas.width;
+    const h = pauseMascotCanvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const cycle = timeMs * 0.007;
+    const jogBounce = Math.abs(Math.sin(cycle)) * 5;
+    const pokeBounce = Math.sin(pauseMascotBounce * Math.PI) * 16;
+    const centerX = w / 2;
+    const centerY = 74 - jogBounce - pokeBounce * 0.8;
+
+    // 1. Soft Shadow on the ground
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.beginPath();
+    ctx.ellipse(centerX, 102, 28 - jogBounce * 0.4, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+
+    // Jogging tilt
+    const bodyTilt = Math.sin(cycle) * 0.08;
+    ctx.rotate(bodyTilt);
+
+    // 2. Impatient High-Stepping Legs
+    const legLiftLeft = Math.max(0, Math.sin(cycle)) * 8;
+    const legLiftRight = Math.max(0, -Math.sin(cycle)) * 8;
+
+    ctx.fillStyle = '#2980b9';
+    // Left leg
+    ctx.fillRect(-12, 14 - legLiftLeft, 8, 14 + legLiftLeft * 0.2);
+    // Right leg
+    ctx.fillRect(4, 14 - legLiftRight, 8, 14 + legLiftRight * 0.2);
+
+    // Cute Shoes
+    ctx.fillStyle = '#1e272e';
+    ctx.fillRect(-14, 26 - legLiftLeft, 10, 5);
+    ctx.fillRect(4, 26 - legLiftRight, 10, 5);
+
+    // 3. Torso
+    ctx.fillStyle = '#e67e22';
+    ctx.beginPath();
+    ctx.roundRect(-15, -4, 30, 20, 5);
+    ctx.fill();
+
+    // 4. Arms and Hands
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#27ae60';
+    if (pauseMascotBounce > 0.15) {
+      // Cheering or pleading hands raised up
+      const waveArm = Math.sin(timeMs * 0.02) * 8;
+      // Left arm raised
+      ctx.beginPath();
+      ctx.moveTo(-14, 0);
+      ctx.lineTo(-24 + waveArm, -20);
+      ctx.stroke();
+      // Right arm raised
+      ctx.beginPath();
+      ctx.moveTo(14, 0);
+      ctx.lineTo(24 - waveArm, -20);
+      ctx.stroke();
+    } else {
+      // Jogging boxer swing arms
+      const armSwingLeft = Math.sin(cycle) * 8;
+      const armSwingRight = -Math.sin(cycle) * 8;
+      // Left arm
+      ctx.beginPath();
+      ctx.moveTo(-14, 2);
+      ctx.lineTo(-22, 6 + armSwingLeft);
+      ctx.stroke();
+      // Right arm
+      ctx.beginPath();
+      ctx.moveTo(14, 2);
+      ctx.lineTo(22, 6 + armSwingRight);
+      ctx.stroke();
+    }
+
+    // 5. Green Chibi Zombie Head
+    ctx.fillStyle = '#2ecc71';
+    ctx.beginPath();
+    ctx.roundRect(-20, -32, 40, 30, [10, 10, 6, 6]);
+    ctx.fill();
+
+    // Backwards Cap
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.roundRect(-21, -35, 42, 11, [8, 8, 2, 2]);
+    ctx.fill();
+    // Cap button
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.arc(0, -36, 3, 0, Math.PI * 2);
+    ctx.fill();
+    // Cap visor facing backwards
+    ctx.fillStyle = '#c0392b';
+    ctx.fillRect(16, -30, 8, 4);
+
+    // 6. Eyes with Interactive Cursor Tracking
+    const leftEyeX = -8;
+    const rightEyeX = 8;
+    const eyeY = -18;
+
+    if (pauseMascotBounce > 0.4) {
+      // Excited Gold Currency Eyes when poked
+      ctx.fillStyle = '#f1c40f';
+      ctx.font = '900 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('$', leftEyeX, eyeY);
+      ctx.fillText('$', rightEyeX, eyeY);
+    } else {
+      // Normal Big Eyes
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(leftEyeX, eyeY, 6, 0, Math.PI * 2);
+      ctx.arc(rightEyeX, eyeY, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eye pupil tracking
+      let lookOffsetX = 0;
+      let lookOffsetY = 0;
+      if (isMouseOverPauseCanvas) {
+        const dx = pauseMascotMouseX - centerX;
+        const dy = pauseMascotMouseY - (centerY + eyeY);
+        const dist = Math.hypot(dx, dy) || 1;
+        lookOffsetX = Math.min(2.5, Math.max(-2.5, (dx / dist) * 2.5));
+        lookOffsetY = Math.min(2.5, Math.max(-2.5, (dy / dist) * 2.5));
+      } else {
+        lookOffsetX = Math.sin(timeMs * 0.003) * 1.5;
+      }
+
+      ctx.fillStyle = '#15181e';
+      ctx.beginPath();
+      ctx.arc(leftEyeX + lookOffsetX, eyeY + lookOffsetY, 2.5, 0, Math.PI * 2);
+      ctx.arc(rightEyeX + lookOffsetX, eyeY + lookOffsetY, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 7. Mouth with tiny fang and drool drop
+    ctx.fillStyle = '#15181e';
+    ctx.beginPath();
+    ctx.ellipse(0, -7, 6, 4, 0, 0, Math.PI);
+    ctx.fill();
+
+    // Cute little white zombie fang
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-2, -7, 2, 3);
+
+    // Drool drop dangling from corner of mouth
+    const droolY = -5 + Math.sin(cycle * 1.5) * 2;
+    ctx.fillStyle = 'rgba(116, 185, 255, 0.85)';
+    ctx.beginPath();
+    ctx.ellipse(4, droolY, 1.8, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 8. Rotating Gold Coin next to Zombie
+    const coinAngle = timeMs * 0.004;
+    const coinScaleX = Math.cos(coinAngle);
+    ctx.save();
+    ctx.translate(34, 4 + Math.sin(cycle) * 3);
+    ctx.scale(coinScaleX, 1);
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.arc(0, 0, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#d4ac0d';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.restore();
+
+    // 9. Speech Bubble when poked
+    if (pauseMascotSpeechTimer > 0 && pauseMascotSpeech) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(21, 24, 30, 0.96)';
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 1.5;
+      ctx.font = "700 11px 'Outfit', sans-serif";
+      const textW = ctx.measureText(pauseMascotSpeech).width;
+      const bw = textW + 16;
+      const bh = 22;
+      const bx = centerX - bw / 2;
+      const by = 8;
+
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Triangle pointing down to head
+      ctx.beginPath();
+      ctx.moveTo(centerX - 4, by + bh);
+      ctx.lineTo(centerX, by + bh + 5);
+      ctx.lineTo(centerX + 4, by + bh);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#fbbf24';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pauseMascotSpeech, centerX, by + bh / 2);
+      ctx.restore();
+    }
+  }
+
+  function updatePauseModalData() {
+    if (!game) return;
+    const livingZombies = game.horde ? game.horde.zombies.filter(z => z.alive).length : 1;
+    const currentDist = game.horde && game.horde.leader ? Math.floor(game.horde.leader.x / 10) : 0;
+    const currentCoins = game.coins || 0;
+
+    if (pauseStatHorde) pauseStatHorde.textContent = `${livingZombies} 丧尸`;
+    if (pauseStatDist) pauseStatDist.textContent = `${currentDist} m`;
+    if (pauseStatCoins) pauseStatCoins.textContent = `${currentCoins}`;
+
+    if (pauseHookBanner) {
+      const randomHook = pauseHookPhrases[Math.floor(Math.random() * pauseHookPhrases.length)];
+      pauseHookBanner.textContent = randomHook;
+    }
+  }
+
+  if (pauseMascotCanvas) {
+    pauseMascotCanvas.addEventListener('mousemove', (e) => {
+      const rect = pauseMascotCanvas.getBoundingClientRect();
+      pauseMascotMouseX = e.clientX - rect.left;
+      pauseMascotMouseY = e.clientY - rect.top;
+      isMouseOverPauseCanvas = true;
+    });
+
+    pauseMascotCanvas.addEventListener('mouseenter', () => {
+      isMouseOverPauseCanvas = true;
+    });
+
+    pauseMascotCanvas.addEventListener('mouseleave', () => {
+      isMouseOverPauseCanvas = false;
+    });
+
+    pauseMascotCanvas.addEventListener('click', () => {
+      pauseMascotPokeCount++;
+      pauseMascotBounce = 1.0;
+      pauseMascotSpeech = pauseMascotQuotes[pauseMascotPokeCount % pauseMascotQuotes.length];
+      pauseMascotSpeechTimer = 2.4;
+      if (pauseMascotHint) {
+        pauseMascotHint.textContent = `已戳急小僵尸 ${pauseMascotPokeCount} 次，它快等不及了！`;
+      }
+      audio.playScoreRoll();
+    });
+  }
+
   function getGameOverEvaluation(stats) {
     const dist = stats.distance || 0;
     const vehicles = stats.vehicles || 0;
@@ -315,6 +634,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (screen !== gameOverModal) {
       stopMascotAnimation();
     }
+    if (screen !== pauseModal) {
+      stopPauseMascotAnimation();
+    }
 
     if (screen) {
       screen.style.display = 'flex';
@@ -353,6 +675,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyL') {
       toggleLogDrawer();
+    } else if ((e.code === 'Space' || e.code === 'Enter') && game && game.isPaused) {
+      game.togglePause();
+      e.preventDefault();
     }
   });
 
@@ -427,6 +752,12 @@ window.addEventListener('DOMContentLoaded', async () => {
       pauseModal.style.display = isPaused ? 'flex' : 'none';
       if (btnHudPause) {
         btnHudPause.textContent = isPaused ? '继续' : '暂停';
+      }
+      if (isPaused) {
+        updatePauseModalData();
+        startPauseMascotAnimation();
+      } else {
+        stopPauseMascotAnimation();
       }
     },
     onSoundToggled: (enabled) => {
@@ -563,6 +894,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('btn-quit-to-menu').addEventListener('click', () => {
+    stopPauseMascotAnimation();
     game.isRunning = false;
     game.isPaused = false;
     audio.stopBgm();
