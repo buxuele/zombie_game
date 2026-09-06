@@ -1,6 +1,7 @@
 import { audio } from '../engine/Audio.js';
 import { logger } from '../systems/Logger.js';
 import { assets } from '../engine/AssetLoader.js';
+import { GAME_CONFIG } from '../config/GameConfig.js';
 
 export class Zombie {
   constructor(index, x, y, isLeader = false, shirtColor = '#e74c3c', pantsColor = '#2980b9', accessory = 'none') {
@@ -84,7 +85,7 @@ export class Zombie {
       this.hatVelocityY = -220; // Secondary motion: Hat pops upwards
 
       if (this.isLeader) {
-        logger.jump(`领头僵尸起跳, 冲量: ${impulse.toFixed(0)}, 起跳高度: ${(540 - this.y - this.height).toFixed(0)}px`);
+        logger.jump(`领头僵尸起跳, 冲量: ${impulse.toFixed(0)}, 起跳高度: ${(GAME_CONFIG.GROUND_Y - this.y - this.height).toFixed(0)}px`);
       }
     } else if (this.airFlaps < 1 && this.airTime > 0.12) {
       this.vy = -Math.max(360, impulse * 0.75);
@@ -215,7 +216,7 @@ export class Zombie {
     }
   }
 
-  drawGroundShadow(ctx, cameraX, groundY = 540) {
+  drawGroundShadow(ctx, cameraX, groundY = GAME_CONFIG.GROUND_Y) {
     if (!this.alive || this.isFallingInPit) return;
     const renderX = this.x - cameraX + this.width / 2;
     const heightAboveGround = Math.max(0, groundY - (this.y + this.height));

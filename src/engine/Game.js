@@ -66,7 +66,7 @@ export class Game {
     audio.startBgm();
 
     const startZombies = storage.getUpgradeLevel('startZombies');
-    this.horde = new ZombieHorde(200, 540, startZombies);
+    this.horde = new ZombieHorde(200, GAME_CONFIG.GROUND_Y, startZombies);
 
     this.level.init();
     biomeManager.reset();
@@ -183,7 +183,7 @@ export class Game {
     for (const p of this.level.puddles) {
       if (Math.abs(leader.x - p.x) < 30 && leader.grounded) {
         if (Math.random() > 0.7) {
-          this.particles.spawnWaterSplash(leader.x, 540);
+          this.particles.spawnWaterSplash(leader.x, GAME_CONFIG.GROUND_Y);
           audio.playPuddleSplash();
         }
       }
@@ -222,7 +222,8 @@ export class Game {
         transformActive: this.transformations.isActive,
         transformProgress: this.transformations.progress,
         transformExpiring: this.transformations.isExpiringSoon,
-        transformName: this.transformations.currentDef ? this.transformations.currentDef.name : ''
+        transformName: this.transformations.currentDef ? this.transformations.currentDef.name : '',
+        coinMultiplier: this.transformations.isGoldActive ? 2.0 : 1.0
       });
     }
   }
@@ -247,7 +248,7 @@ export class Game {
 
     const bonusZombies = v.config.survivors || 2;
     for (let i = 0; i < bonusZombies; i++) {
-      this.horde.addZombie(v.x + i * 20, 540 - 54);
+      this.horde.addZombie(v.x + i * 20, GAME_CONFIG.GROUND_Y - 54);
     }
   }
 
@@ -278,7 +279,7 @@ export class Game {
     const isNinja = this.transformations.activeType === 'NINJA';
     const isQuarterback = this.transformations.activeType === 'QUARTERBACK';
 
-    this.transformations.draw(this.renderer.ctx, cameraX, this.horde, 540);
+    this.transformations.draw(this.renderer.ctx, cameraX, this.horde, GAME_CONFIG.GROUND_Y);
 
     if (this.horde) {
       const hat = storage.data.equippedHat || 'none';

@@ -33,6 +33,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // HUD Elements
   const hudCoins = document.getElementById('hud-coins');
+  const hudCoinMult = document.getElementById('hud-coin-mult');
   const hudZombies = document.getElementById('hud-zombies');
   const hudDistance = document.getElementById('hud-distance');
   const transformBarContainer = document.getElementById('transform-bar-container');
@@ -942,6 +943,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const game = new Game(canvas, {
     onHudUpdate: (stats) => {
       hudCoins.textContent = stats.coins;
+      if (hudCoinMult) {
+        if (stats.coinMultiplier && stats.coinMultiplier > 1.0) {
+          hudCoinMult.style.display = 'inline-flex';
+          hudCoinMult.textContent = `x${stats.coinMultiplier}`;
+        } else {
+          hudCoinMult.style.display = 'none';
+        }
+      }
       hudZombies.textContent = stats.zombies;
       hudDistance.textContent = `${stats.distance} m`;
 

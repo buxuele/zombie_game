@@ -449,7 +449,8 @@ import { GAME_CONFIG } from '../src/config/GameConfig.js';
 function testCollisionManagerModule() {
   console.log('\n--- Testing CollisionManager & GameConfig Module ---');
   assert(GAME_CONFIG.CANVAS_WIDTH === 1280, 'GAME_CONFIG contains CANVAS_WIDTH 1280');
-  assert(GAME_CONFIG.GROUND_Y === 540, 'GAME_CONFIG contains GROUND_Y 540');
+  assert(GAME_CONFIG.GROUND_Y === 580, 'GAME_CONFIG contains GROUND_Y 580');
+  assert(GAME_CONFIG.ROAD_HEIGHT === 140, 'GAME_CONFIG contains ROAD_HEIGHT 140');
   assert(GAME_CONFIG.GRAVITY === 800, 'GAME_CONFIG contains GRAVITY 800');
 
   // AABB tests
@@ -991,8 +992,70 @@ testTransformationDurationsAndUFORemoval();
 testHighContrastGroundRendering();
 testPauseModalMascotAndHookSystem();
 testParallaxScrollingAndNewBiomes();
+// 33. Civilian Cliff Braking & Lower Ground Height Invariant Test
+function testCivilianCliffBrakingAndHeightRefinement() {
+  console.log('\n--- Testing Civilian Cliff Braking & Ground Height Invariants ---');
+
+  // 1. Idle civilian does not drift or dance into pits
+  const idleCiv = new Civilian(500, GAME_CONFIG.GROUND_Y);
+  const initialX = idleCiv.x;
+  const mockLevel = {
+    isGroundAt: (x) => x >= 400 && x <= 600
+  };
+
+  for (let step = 0; step < 60; step++) {
+    idleCiv.update(1 / 60, null, mockLevel);
+  }
+  assert(idleCiv.x === initialX, `Idle civilian stays firmly in place: x=${idleCiv.x} === ${initialX}`);
+  assert(idleCiv.isTrappedAtLedge === false, 'Idle civilian not trapped');
+
+  // 2. Panicking civilian approaches pit edge and brakes without jumping into pit
+  const panicCiv = new Civilian(580, GAME_CONFIG.GROUND_Y);
+  panicCiv.isPanicking = true;
+  assert(mockLevel.isGroundAt(580) === true, 'Starting position has ground');
+  assert(mockLevel.isGroundAt(650) === false, 'Forward position is a pit');
+
+  for (let step = 0; step < 60; step++) {
+    panicCiv.update(1 / 60, null, mockLevel);
+  }
+  assert(panicCiv.isTrappedAtLedge === true, 'Panicking civilian successfully brakes at cliff edge');
+  assert(panicCiv.isFalling === false, 'Civilian does not jump or fall into pit');
+  assert(mockLevel.isGroundAt(panicCiv.x) === true, `Civilian remains standing securely on ground: x=${panicCiv.x.toFixed(1)}`);
+
+  // 3. Ground height refinement verification
+  assert(GAME_CONFIG.GROUND_Y === 580, 'Ground height lowered to 580px');
+  assert(GAME_CONFIG.ROAD_HEIGHT === 140, 'Road height reduced to 140px');
+  const backgroundCoverageRatio = GAME_CONFIG.GROUND_Y / GAME_CONFIG.CANVAS_HEIGHT;
+  assert(backgroundCoverageRatio > 0.80, `Background occupies over 80% screen area: ${(backgroundCoverageRatio * 100).toFixed(1)}%`);
+}
+
+testVehicleSuspensionState();
+testCivilianInfectionInheritance();
+testDynamicMovingTrafficPhysics();
+testBiomeRandomNonRepeating();
+testBiomeSmoothAlphaCrossfade();
+testDynamicGroundShadowScaling();
+testFixedCameraStability();
+testParticleSystemVisualTypes();
+testAdaptiveSceneBgmTracks();
+testHazardVisibilityAndProgressiveDifficulty();
+testVehicleGroundContact();
+testEarlyCarDensity();
+testCivilianAbyssFallPhysics();
+testCollisionManagerModule();
+testDistantVehicleNoAutoFlip();
+testStrictTankRequiredThreshold();
+testBombMultiCasualtyRadius();
+testVehicleSpriteRenderPriority();
+testOnDemandBackgroundLoading();
+testCivilianPanicAndScreamOnApproach();
+testTransformationDurationsAndUFORemoval();
+testHighContrastGroundRendering();
+testPauseModalMascotAndHookSystem();
+testParallaxScrollingAndNewBiomes();
 testShopAndEconomySystem();
 testMenuMascotAndDiverseBiomeCycle();
+testCivilianCliffBrakingAndHeightRefinement();
 
 console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);
 if (failed > 0) {

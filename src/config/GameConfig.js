@@ -5,9 +5,9 @@ export const GAME_CONFIG = {
   CANVAS_WIDTH: 1280,
   CANVAS_HEIGHT: 720,
 
-  // Ground Baseline
-  GROUND_Y: 540,
-  ROAD_HEIGHT: 180,
+  // Ground Baseline (Lowered to 580px to expand sky & background visible area to 80.5%)
+  GROUND_Y: 580,
+  ROAD_HEIGHT: 140,
 
   // Base Physics
   GRAVITY: 800,

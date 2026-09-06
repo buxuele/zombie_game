@@ -121,6 +121,27 @@ body {
   100% { transform: scale(1); }
 }
 
+.hud-multiplier-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fef08a;
+  background: rgba(234, 179, 8, 0.25);
+  border: 1px solid rgba(234, 179, 8, 0.6);
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(234, 179, 8, 0.4);
+  animation: hudBadgeGlow 1.2s infinite alternate ease-in-out;
+}
+
+@keyframes hudBadgeGlow {
+  0% { transform: scale(1); box-shadow: 0 0 6px rgba(234, 179, 8, 0.3); }
+  100% { transform: scale(1.08); box-shadow: 0 0 12px rgba(234, 179, 8, 0.7); }
+}
+
 .transform-warning-pulse {
   animation: warningPulse 0.4s infinite alternate;
 }
@@ -632,6 +653,19 @@ body {
   background: #f1c40f;
   border-color: #f39c12;
   box-shadow: 0 0 6px rgba(241, 196, 15, 0.5);
+}
+
+.shop-max-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fef08a;
+  background: rgba(234, 179, 8, 0.2);
+  border: 1px solid rgba(234, 179, 8, 0.6);
+  border-radius: 4px;
 }
 
 .shop-item-action {

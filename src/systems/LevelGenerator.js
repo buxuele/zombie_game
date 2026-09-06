@@ -198,6 +198,8 @@ export class LevelGenerator {
   }
 
   draw(ctx, cameraX) {
+    const roadHeight = GAME_CONFIG.ROAD_HEIGHT;
+
     // 1. Draw High-Contrast Deep Abyss Chasms (Pits between platforms)
     this.drawPitsAndChasms(ctx, cameraX);
 
@@ -210,12 +212,12 @@ export class LevelGenerator {
 
       if (roadStyle === 'CITY') {
         // High-Contrast Modern City Highway (Light Cold Slate Asphalt vs Dark Night Sky)
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#334155');
         roadGrad.addColorStop(0.2, '#243042');
         roadGrad.addColorStop(1, '#18202c');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // 4px Dual-tone Aluminum Curb Top Highlight (Separates road from dark sky)
         ctx.fillStyle = '#f1f5f9';
@@ -239,12 +241,12 @@ export class LevelGenerator {
         }
       } else if (roadStyle === 'CYBER') {
         // High-Contrast Cyber Neon Expressway (Navy Steel Deck with Glowing Cyan & Hot Pink)
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#273549');
         roadGrad.addColorStop(0.2, '#1a2436');
         roadGrad.addColorStop(1, '#0f1624');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // Glowing Laser Aurora Curb
         ctx.fillStyle = '#67e8f9';
@@ -264,11 +266,11 @@ export class LevelGenerator {
         }
       } else if (roadStyle === 'TUNNEL') {
         // Industrial Heavy Duty Tunnel Concrete
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#2c3545');
         roadGrad.addColorStop(1, '#19202c');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // Safety Amber Edge Guard
         ctx.fillStyle = '#f97316';
@@ -282,12 +284,12 @@ export class LevelGenerator {
         this.drawRoadDashes(ctx, plat, cameraX, 48, '#f8fafc', 44, 36, 3.5);
       } else if (roadStyle === 'BEACH') {
         // Deep Walnut Seaside Boardwalk (Dark Rich Wood contrasting with Bright Turquoise Ocean)
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#3a2217');
         roadGrad.addColorStop(0.3, '#28160e');
         roadGrad.addColorStop(1, '#170c07');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // Crisp White Seaside Barrier Curb
         ctx.fillStyle = '#f8fafc';
@@ -298,7 +300,7 @@ export class LevelGenerator {
         // Inlaid Teak Plank Slats
         ctx.fillStyle = '#140905';
         for (let dx = plat.startX; dx < plat.endX; dx += 26) {
-          ctx.fillRect(dx - cameraX, this.groundY + 5, 2, 175);
+          ctx.fillRect(dx - cameraX, this.groundY + 5, 2, roadHeight - 5);
         }
 
         // Solid Edge Stripe & Center Dashed Track (Dashed 虚线)
@@ -307,11 +309,11 @@ export class LevelGenerator {
         this.drawRoadDashes(ctx, plat, cameraX, 48, '#e2e8f0', 44, 36, 3.5);
       } else if (roadStyle === 'BRIDGE') {
         // Suspension Sea Bridge Steel Deck
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#334155');
         roadGrad.addColorStop(1, '#1e293b');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // Anti-Corrosion Vibrant Red Barrier
         ctx.fillStyle = '#dc2626';
@@ -325,12 +327,12 @@ export class LevelGenerator {
         this.drawRoadDashes(ctx, plat, cameraX, 48, '#f8fafc', 44, 36, 3.5);
       } else if (roadStyle === 'SCI_FI') {
         // Sci-Fi Titanium Alloy Deck with Sky-Blue Mag-Rail (Contrasting with Deep Space)
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#38465c');
         roadGrad.addColorStop(0.2, '#263244');
         roadGrad.addColorStop(1, '#161e2a');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // Sky-Blue Pulsing Mag-Rail Curb
         ctx.fillStyle = '#7dd3fc';
@@ -344,12 +346,12 @@ export class LevelGenerator {
         this.drawRoadDashes(ctx, plat, cameraX, 48, '#38bdf8', 44, 36, 3.5);
       } else if (roadStyle === 'FOREST') {
         // Pale Concrete Highway (Bright Light Gray Cut Through Dark Green Forest Canopy)
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#475569');
         roadGrad.addColorStop(0.25, '#334155');
         roadGrad.addColorStop(1, '#1e293b');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // Vivid Moss & Amber Warning Curb
         ctx.fillStyle = '#4ade80';
@@ -363,12 +365,12 @@ export class LevelGenerator {
         this.drawRoadDashes(ctx, plat, cameraX, 48, '#fbbf24', 40, 36, 3.5);
       } else if (roadStyle === 'LOTUS') {
         // High-Contrast Lotus Pond Jade Slate (Contrasting with Lotus Lilypads)
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#334e48');
         roadGrad.addColorStop(0.25, '#223530');
         roadGrad.addColorStop(1, '#14221e');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // White Jade Balustrade Curb Highlight
         ctx.fillStyle = '#f8fafc';
@@ -379,7 +381,7 @@ export class LevelGenerator {
         // Water Ripple Slate Joints
         ctx.fillStyle = '#172824';
         for (let dx = plat.startX; dx < plat.endX; dx += 36) {
-          ctx.fillRect(dx - cameraX, this.groundY + 5, 2, 175);
+          ctx.fillRect(dx - cameraX, this.groundY + 5, 2, roadHeight - 5);
         }
 
         // Solid Edge Stripe & Emerald Water Glow Center Dashes (Dashed 虚线)
@@ -388,12 +390,12 @@ export class LevelGenerator {
         this.drawRoadDashes(ctx, plat, cameraX, 48, '#34d399', 42, 36, 3.5);
       } else if (roadStyle === 'CASTLE') {
         // European Castle Red Brick Pathway
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#4a251e');
         roadGrad.addColorStop(0.25, '#2e1511');
         roadGrad.addColorStop(1, '#1a0a07');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // Golden Timber Fence Curb
         ctx.fillStyle = '#fde68a';
@@ -407,12 +409,12 @@ export class LevelGenerator {
         this.drawRoadDashes(ctx, plat, cameraX, 48, '#f8fafc', 44, 36, 3.5);
       } else {
         // Desert Blacktop Expressway (Deep Black Asphalt Slicing Through Golden/Sunset Sand)
-        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+        const roadGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
         roadGrad.addColorStop(0, '#202632');
         roadGrad.addColorStop(0.25, '#141922');
         roadGrad.addColorStop(1, '#0b0e14');
         ctx.fillStyle = roadGrad;
-        ctx.fillRect(renderX, this.groundY, width, 180);
+        ctx.fillRect(renderX, this.groundY, width, roadHeight);
 
         // High-Contrast Golden Sandstone Curb
         ctx.fillStyle = '#fef08a';
@@ -477,27 +479,28 @@ export class LevelGenerator {
       const gapWidth = gapEnd - gapStart;
 
       // 1. Abyss Deep Void (Pitch-black deep chasm with glowing bottom danger hue)
-      const chasmGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + 180);
+      const roadHeight = GAME_CONFIG.ROAD_HEIGHT;
+      const chasmGrad = ctx.createLinearGradient(0, this.groundY, 0, this.groundY + roadHeight);
       chasmGrad.addColorStop(0, '#000000');
       chasmGrad.addColorStop(0.3, '#080509');
       chasmGrad.addColorStop(1, '#800000');
       ctx.fillStyle = chasmGrad;
-      ctx.fillRect(rStart, this.groundY, gapWidth, 180);
+      ctx.fillRect(rStart, this.groundY, gapWidth, roadHeight);
 
       // 2. Chasm Cliff Walls (Left and Right Vertical Structural Rockfaces)
       ctx.fillStyle = '#08080c';
-      ctx.fillRect(rStart, this.groundY, 14, 180);
-      ctx.fillRect(rEnd - 14, this.groundY, 14, 180);
+      ctx.fillRect(rStart, this.groundY, 14, roadHeight);
+      ctx.fillRect(rEnd - 14, this.groundY, 14, roadHeight);
 
       // 3. Danger warning laser glow at bottom of pit
       ctx.fillStyle = 'rgba(235, 47, 6, 0.35)';
-      ctx.fillRect(rStart, this.groundY + 130, gapWidth, 50);
+      ctx.fillRect(rStart, this.groundY + roadHeight - 35, gapWidth, 35);
 
       ctx.strokeStyle = 'rgba(255, 71, 87, 0.8)';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(rStart, this.groundY + 155);
-      ctx.lineTo(rEnd, this.groundY + 155);
+      ctx.moveTo(rStart, this.groundY + roadHeight - 12);
+      ctx.lineTo(rEnd, this.groundY + roadHeight - 12);
       ctx.stroke();
     }
   }

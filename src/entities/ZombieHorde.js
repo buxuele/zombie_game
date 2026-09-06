@@ -1,8 +1,9 @@
 import { Zombie } from './Zombie.js';
 import { audio } from '../engine/Audio.js';
+import { GAME_CONFIG } from '../config/GameConfig.js';
 
 export class ZombieHorde {
-  constructor(startX = 200, groundY = 540, initialCount = 1) {
+  constructor(startX = 200, groundY = GAME_CONFIG.GROUND_Y, initialCount = 1) {
     this.groundY = groundY;
     this.zombies = [];
     this.maxZombies = 36;

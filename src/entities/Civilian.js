@@ -39,6 +39,7 @@ export class Civilian {
     this.vy = 0;
     this.isFalling = false;
     this.fallRotation = 0;
+    this.isTrappedAtLedge = false;
   }
 
   triggerPanic(particleSystem = null) {
@@ -109,15 +110,29 @@ export class Civilian {
     }
 
     if (this.isPanicking) {
-      this.animTimer += dt * 26;
-      this.x += (this.panicSpeed * 1.8) * dt;
+      this.animTimer += dt * 24;
       this.panicTimer += dt;
+
+      // Smart cliff ledge detection: do not jump blindly into pits
+      const lookAheadDistance = 24;
+      const groundAhead = level ? level.isGroundAt(this.x + this.width + lookAheadDistance) : true;
+
+      if (groundAhead) {
+        this.x += (this.panicSpeed * 1.8) * dt;
+        this.isTrappedAtLedge = false;
+      } else {
+        // Stopped right at the brink of the abyss in sheer terror
+        this.isTrappedAtLedge = true;
+      }
+
       if (particleSystem && typeof particleSystem.spawn === 'function' && Math.random() > 0.6) {
         particleSystem.spawn(this.x + this.width / 2, this.y - 6, (Math.random() - 0.5) * 30, -35, '#ffffff', 2.5, 4, 0.16, 120, 'sweat');
       }
     } else {
-      this.animTimer += dt * 9;
-      this.x += this.panicSpeed * dt;
+      // Idle state: peacefully standing on the pavement, looking around calmly
+      this.animTimer += dt * 3.5;
+      this.isTrappedAtLedge = false;
+      // Fixed position, no suicidal forward walking towards pits
     }
   }
 
@@ -165,51 +180,73 @@ export class Civilian {
     const shirtColor = isInfected ? '#27ae60' : this.shirtColor;
     const pantsColor = this.pantsColor;
 
-    // Running leg oscillation
-    const legSwing = Math.sin(this.animTimer) * (this.isPanicking ? 10 : 7);
-    const armSwing = Math.cos(this.animTimer) * 10;
-    const headBob = Math.abs(Math.sin(this.animTimer * 1.5)) * (this.isPanicking ? 5 : 3);
+    // Running leg oscillation only when panicking and actively sprinting
+    const isRunning = this.isPanicking && !this.isTrappedAtLedge;
+    const isTrembling = this.isPanicking && this.isTrappedAtLedge;
 
-    // Legs
+    const legSwing = isRunning ? Math.sin(this.animTimer) * 10 : 0;
+    const headBob = isRunning
+      ? Math.abs(Math.sin(this.animTimer * 1.5)) * 5
+      : (isTrembling ? Math.sin(this.animTimer * 4) * 2 : Math.sin(this.animTimer) * 1.2);
+
+    const trembleX = isTrembling ? (Math.sin(this.animTimer * 8) * 1.5) : 0;
+
+    // Legs: planted straight on the ground when standing
     ctx.fillStyle = pantsColor;
-    ctx.fillRect(-6, -14 + legSwing, 4, 14);
-    ctx.fillRect(2, -14 - legSwing, 4, 14);
+    ctx.fillRect(-6 + trembleX, -14 + legSwing, 4, 14);
+    ctx.fillRect(2 + trembleX, -14 - legSwing, 4, 14);
 
     // Torso Shirt
     ctx.fillStyle = shirtColor;
     ctx.beginPath();
-    ctx.roundRect(-8, -32, 16, 18, 4);
+    ctx.roundRect(-8 + trembleX, -32, 16, 18, 4);
     ctx.fill();
 
-    // Arms waving in panic or normal run
+    // Arms:
     ctx.fillStyle = skinColor;
     if (this.isPanicking) {
-      // Hilarious panic flailing arms raised high over head
-      const flailLeft = -2.1 + Math.sin(this.animTimer * 1.8) * 0.6;
-      const flailRight = 2.1 + Math.cos(this.animTimer * 1.8) * 0.6;
+      if (this.isTrappedAtLedge) {
+        // Hands clutching head/cheeks in sheer terror at the ledge
+        ctx.save();
+        ctx.translate(-7 + trembleX, -30);
+        ctx.rotate(-2.4 + Math.sin(this.animTimer * 5) * 0.2);
+        ctx.fillRect(-2, 0, 4, 14);
+        ctx.restore();
 
-      ctx.save();
-      ctx.translate(-7, -30);
-      ctx.rotate(flailLeft);
-      ctx.fillRect(-2, 0, 4, 14);
-      ctx.restore();
+        ctx.save();
+        ctx.translate(7 + trembleX, -30);
+        ctx.rotate(2.4 - Math.sin(this.animTimer * 5) * 0.2);
+        ctx.fillRect(-2, 0, 4, 14);
+        ctx.restore();
+      } else {
+        // High panic flailing arms while sprinting
+        const flailLeft = -2.1 + Math.sin(this.animTimer * 1.8) * 0.6;
+        const flailRight = 2.1 + Math.cos(this.animTimer * 1.8) * 0.6;
 
-      ctx.save();
-      ctx.translate(7, -30);
-      ctx.rotate(flailRight);
-      ctx.fillRect(-2, 0, 4, 14);
-      ctx.restore();
+        ctx.save();
+        ctx.translate(-7, -30);
+        ctx.rotate(flailLeft);
+        ctx.fillRect(-2, 0, 4, 14);
+        ctx.restore();
+
+        ctx.save();
+        ctx.translate(7, -30);
+        ctx.rotate(flailRight);
+        ctx.fillRect(-2, 0, 4, 14);
+        ctx.restore();
+      }
     } else {
+      // Natural idle stance: arms hanging peacefully down at sides
       ctx.save();
       ctx.translate(-8, -28);
-      ctx.rotate(-0.8 + armSwing * 0.05);
-      ctx.fillRect(-3, 0, 4, 12);
+      ctx.rotate(-0.15 + Math.sin(this.animTimer) * 0.05);
+      ctx.fillRect(-2, 0, 4, 12);
       ctx.restore();
 
       ctx.save();
       ctx.translate(8, -28);
-      ctx.rotate(0.8 - armSwing * 0.05);
-      ctx.fillRect(-1, 0, 4, 12);
+      ctx.rotate(0.15 - Math.sin(this.animTimer) * 0.05);
+      ctx.fillRect(-2, 0, 4, 12);
       ctx.restore();
     }
 

@@ -452,6 +452,9 @@ export class ShopUI {
       for (let i = 1; i <= item.maxLevel; i++) {
         pipsHtml += `<span class="pip ${i <= currentLevel ? 'active' : ''}"></span>`;
       }
+      if (isMax) {
+        pipsHtml += '<span class="shop-max-badge">已满级</span>';
+      }
       pipsHtml += '</div>';
 
       const statCurrText = item.statCurrent ? item.statCurrent(currentLevel) : `当前等级: 等级 ${currentLevel}`;
@@ -463,9 +466,9 @@ export class ShopUI {
       if (isMax) {
         actionBtnHtml = '<button class="btn btn-disabled">已达满级</button>';
       } else if (canAfford) {
-        actionBtnHtml = `<button class="btn btn-gold btn-upgrade">升级 (${nextPrice} 金币)</button>`;
+        actionBtnHtml = `<button class="btn btn-gold btn-upgrade">升级 ${nextPrice} 金币</button>`;
       } else {
-        actionBtnHtml = `<button class="btn btn-gold btn-upgrade btn-need-coins">升级 (${nextPrice} 金币)</button>`;
+        actionBtnHtml = `<button class="btn btn-gold btn-upgrade btn-need-coins">升级 ${nextPrice} 金币</button>`;
       }
 
       card.innerHTML = `
@@ -556,9 +559,9 @@ export class ShopUI {
       } else if (isUnlocked) {
         actionBtn = '<button class="btn btn-primary btn-equip">换上装扮</button>';
       } else if (canAfford) {
-        actionBtn = `<button class="btn btn-gold btn-buy">购买 (${hat.price} 金币)</button>`;
+        actionBtn = `<button class="btn btn-gold btn-buy">购买 ${hat.price} 金币</button>`;
       } else {
-        actionBtn = `<button class="btn btn-gold btn-buy btn-need-coins">购买 (${hat.price} 金币)</button>`;
+        actionBtn = `<button class="btn btn-gold btn-buy btn-need-coins">购买 ${hat.price} 金币</button>`;
       }
 
       card.innerHTML = `

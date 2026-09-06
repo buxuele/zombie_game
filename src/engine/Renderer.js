@@ -1,5 +1,6 @@
 import { assets } from './AssetLoader.js';
 import { biomeManager } from '../systems/BiomeManager.js';
+import { GAME_CONFIG } from '../config/GameConfig.js';
 
 export class Camera {
   constructor() {
@@ -77,7 +78,8 @@ export class Renderer {
       if (vz.alpha > 0.001) {
         this.ctx.save();
         this.ctx.globalAlpha = vz.alpha;
-        const grad = this.ctx.createLinearGradient(0, 0, 0, 540);
+        const visibleHeight = GAME_CONFIG.GROUND_Y;
+        const grad = this.ctx.createLinearGradient(0, 0, 0, visibleHeight);
         const colors = vz.skyGradient || ['#0f172a', '#1e1b4b', '#3b0764', '#1e1b4b'];
         grad.addColorStop(0, colors[0]);
         grad.addColorStop(0.35, colors[1]);
@@ -104,7 +106,7 @@ export class Renderer {
   drawPanoramicBackground(img, cameraX, biomeType = 'CITY', progress = 0) {
     const validImg = (img && img.complete && img.naturalWidth > 0) ? img : (assets?.images?.cityBg || null);
     if (validImg && validImg.complete && validImg.naturalWidth > 0) {
-      const visibleHeight = 540; // Road surface baseline
+      const visibleHeight = GAME_CONFIG.GROUND_Y; // Road surface baseline (lowered to give background 80.5% area)
       const naturalRatio = validImg.naturalWidth / validImg.naturalHeight;
 
       // Scale height and width to ensure smooth pan room without ever showing empty margins or repeating seam
@@ -127,10 +129,11 @@ export class Renderer {
 
   drawProceduralVectorBackground(offset, biomeType) {
     this.ctx.save();
+    const baseG = GAME_CONFIG.GROUND_Y;
 
     if (biomeType === 'CITY') {
       // 1. Sunset Sky Gradient
-      const skyGrad = this.ctx.createLinearGradient(0, 0, 0, 540);
+      const skyGrad = this.ctx.createLinearGradient(0, 0, 0, baseG);
       skyGrad.addColorStop(0, '#0f172a');
       skyGrad.addColorStop(0.35, '#3b0764');
       skyGrad.addColorStop(0.7, '#831843');
@@ -176,7 +179,7 @@ export class Renderer {
       }
     } else if (biomeType === 'BEACH') {
       // 1. Tropical Sky Gradient
-      const skyGrad = this.ctx.createLinearGradient(0, 0, 0, 540);
+      const skyGrad = this.ctx.createLinearGradient(0, 0, 0, baseG);
       skyGrad.addColorStop(0, '#0284c7');
       skyGrad.addColorStop(0.5, '#38bdf8');
       skyGrad.addColorStop(0.85, '#bae6fd');
@@ -186,9 +189,9 @@ export class Renderer {
 
       // Ocean Sea
       this.ctx.fillStyle = '#0369a1';
-      this.ctx.fillRect(0, 340, this.width, 200);
+      this.ctx.fillRect(0, 340, this.width, baseG - 340);
       this.ctx.fillStyle = '#0284c7';
-      this.ctx.fillRect(0, 380, this.width, 160);
+      this.ctx.fillRect(0, 380, this.width, baseG - 380);
 
       // Palm Trees
       const beachW = 500;
@@ -197,7 +200,7 @@ export class Renderer {
         this.ctx.fillStyle = '#0f172a';
         // Palm Trunk
         this.ctx.beginPath();
-        this.ctx.moveTo(bx + 120, 540);
+        this.ctx.moveTo(bx + 120, baseG);
         this.ctx.quadraticCurveTo(bx + 140, 380, bx + 180, 260);
         this.ctx.lineWidth = 14;
         this.ctx.strokeStyle = '#0f172a';
@@ -215,7 +218,7 @@ export class Renderer {
       }
     } else if (biomeType === 'DESERT') {
       // 1. Warm Amber Desert Twilight
-      const skyGrad = this.ctx.createLinearGradient(0, 0, 0, 540);
+      const skyGrad = this.ctx.createLinearGradient(0, 0, 0, baseG);
       skyGrad.addColorStop(0, '#581c87');
       skyGrad.addColorStop(0.4, '#9a3412');
       skyGrad.addColorStop(0.8, '#ea580c');
@@ -229,17 +232,17 @@ export class Renderer {
       for (let dx = startX - desertW; dx < this.width + desertW; dx += desertW) {
         this.ctx.fillStyle = '#7c2d12';
         this.ctx.beginPath();
-        this.ctx.moveTo(dx + 160, 540);
+        this.ctx.moveTo(dx + 160, baseG);
         this.ctx.lineTo(dx + 300, 240);
-        this.ctx.lineTo(dx + 440, 540);
+        this.ctx.lineTo(dx + 440, baseG);
         this.ctx.closePath();
         this.ctx.fill();
 
         this.ctx.fillStyle = '#9a3412';
         this.ctx.beginPath();
         this.ctx.moveTo(dx + 300, 240);
-        this.ctx.lineTo(dx + 300, 540);
-        this.ctx.lineTo(dx + 440, 540);
+        this.ctx.lineTo(dx + 300, baseG);
+        this.ctx.lineTo(dx + 440, baseG);
         this.ctx.closePath();
         this.ctx.fill();
       }

@@ -44,6 +44,13 @@ class Particle {
       return;
     }
 
+    if (this.type === 'sparkle') {
+      this.sparklePhase += dt * this.sparkleSpeed;
+    } else if (this.type === 'bubble') {
+      this.waveAngle += dt * 5;
+      this.x += Math.sin(this.waveAngle) * 0.8;
+    }
+
     this.vy += this.gravity * dt;
     this.vx *= this.drag;
     this.vy *= this.drag;
@@ -52,8 +59,9 @@ class Particle {
     this.rotation += this.vRot * dt;
 
     // Ground bounce physics for heavy debris (e.g. tires)
-    if (this.type === 'tire' && this.y >= 540 - this.size && this.vy > 0) {
-      this.y = 540 - this.size;
+    const groundY = GAME_CONFIG.GROUND_Y;
+    if (this.type === 'tire' && this.y >= groundY - this.size && this.vy > 0) {
+      this.y = groundY - this.size;
       this.vy = -this.vy * 0.62;
       this.vx *= 0.85;
       this.vRot *= 0.85;

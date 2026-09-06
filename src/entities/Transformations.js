@@ -1,5 +1,6 @@
 import { audio } from '../engine/Audio.js';
 import { assets } from '../engine/AssetLoader.js';
+import { GAME_CONFIG } from '../config/GameConfig.js';
 
 export const TRANSFORMATION_TYPES = {
   TSUNAMI: {
@@ -75,11 +76,15 @@ export class TransformationManager {
     return this.isActive ? (this.timer / this.maxDuration) : 0;
   }
 
+  get isGoldActive() {
+    return this.isActive && this.activeType === 'GOLD';
+  }
+
   get currentDef() {
     return this.activeType ? TRANSFORMATION_TYPES[this.activeType] : null;
   }
 
-  update(dt, gameSpeed, horde, particleSystem, camera, groundY = 540) {
+  update(dt, gameSpeed, horde, particleSystem, camera, groundY = GAME_CONFIG.GROUND_Y) {
     if (!this.isActive) return;
 
     this.timer -= dt;
