@@ -1,3 +1,5 @@
+import { GAME_CONFIG } from '../config/GameConfig.js';
+
 class Particle {
   constructor() {
     this.active = false;

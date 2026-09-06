@@ -350,6 +350,18 @@ function testParticleSystemVisualTypes() {
   ps.spawnCurrencyAura(500, 400, 'coin');
   const aura = ps.particles.find(p => p.active && p.type === 'shockwave');
   assert(aura !== undefined, 'Currency aura shockwave spawned successfully');
+
+  // Verify ParticleSystem update loop including tire bouncing on ground
+  ps.spawnVehicleDebris(300, GAME_CONFIG.GROUND_Y - 20, 2);
+  let errorCaught = null;
+  try {
+    for (let step = 0; step < 15; step++) {
+      ps.update(1 / 60, 0);
+    }
+  } catch (err) {
+    errorCaught = err;
+  }
+  assert(errorCaught === null, 'ParticleSystem update runs cleanly without throwing reference errors');
 }
 
 // 15. Adaptive Scene BGM Tracks Test
