@@ -1,5 +1,18 @@
 const STORAGE_KEY = 'ZOMBIE_TSUNAMI_SAVE_V1';
 
+// 本地调试默认静音，远程部署默认开启声音。
+// 依据：本地反复调试时持续播放背景音乐会干扰排查，而线上首访用户应当直接听到声音。
+// 该默认值只在首次进入、尚无存档时生效；玩家手动切换过的偏好不会被覆盖。
+function isLocalDebugEnvironment() {
+  if (typeof window === 'undefined' || !window.location) return false;
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '' || host === '0.0.0.0';
+}
+
+function resolveDefaultSoundEnabled() {
+  return !isLocalDebugEnvironment();
+}
+
 const DEFAULT_DATA = {
   totalCoins: 200,
   highScoreDistance: 0,
@@ -18,7 +31,7 @@ const DEFAULT_DATA = {
     { id: 'collect_coins_1', title: '累计收集 200 枚金币', target: 200, current: 0, reward: 250, type: 'coins_collected', completed: false, claimed: false },
     { id: 'transform_1', title: '触发 2 次超能变身', target: 2, current: 0, reward: 350, type: 'transforms_used', completed: false, claimed: false }
   ],
-  soundEnabled: true
+  soundEnabled: resolveDefaultSoundEnabled()
 };
 
 export class Storage {

@@ -49,6 +49,8 @@ export class ZombieHorde {
   setPushing(isPushing) {
     this.zombies.forEach(z => {
       z.isPushing = isPushing;
+      // 清除奔跑编队弹簧残余速度，避免切入推车队形时向外弹开
+      z.vx = 0;
     });
   }
 
@@ -111,8 +113,9 @@ export class ZombieHorde {
 
   arrangePushingFormation(living, leader, dt) {
     const visibleCount = Math.min(living.length, GAME_CONFIG.VEHICLE_PUSH_VISIBLE_COUNT);
-    const frontFollow = 1 - Math.exp(-20 * dt);
-    const rearFollow = 1 - Math.exp(-10 * dt);
+    // 集结速度必须足够快，让玩家先看到抱紧，而不是先看到弹开再收拢
+    const frontFollow = 1 - Math.exp(-34 * dt);
+    const rearFollow = 1 - Math.exp(-20 * dt);
 
     living.forEach((z, index) => {
       if (index === 0) return;
@@ -121,12 +124,18 @@ export class ZombieHorde {
       let targetDepth;
 
       if (index < visibleCount) {
+        // 两排肩并肩贴合车头，列距必须小于奔跑编队的 24px，才能呈现抱紧而非分散
         const rank = index - 1;
-        targetX = leader.x - 34 - rank * 34;
-        targetDepth = (rank % 2 === 0 ? -9 : 9) + Math.sin(leader.runTimer * 5 + index) * 2;
+        const row = rank % 2;
+        const col = Math.floor(rank / 2);
+        targetX = leader.x - 22 - col * 20 + row * 4;
+        targetDepth = (row === 0 ? -7 : 7) + Math.sin(leader.runTimer * 5 + index) * 1.2;
       } else {
-        targetX = leader.x - 230 - (index - visibleCount) * 24;
-        targetDepth = Math.sin(leader.runTimer * 2 + index) * 4;
+        const rank = index - visibleCount;
+        const row = rank % 2;
+        const col = Math.floor(rank / 2);
+        targetX = leader.x - 112 - col * 20 + row * 4;
+        targetDepth = (row === 0 ? -7 : 7);
       }
 
       z.x += (targetX - z.x) * (index < visibleCount ? frontFollow : rearFollow);

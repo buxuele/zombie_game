@@ -208,6 +208,28 @@ function testGroupPushFormationAndJumpCancel() {
   assert(closePushers.length >= 6, `At least six zombies visibly gather at the vehicle: ${closePushers.length}`);
   assert(horde.zombies.every(z => z.isPushing), 'All visible zombies enter the pushing state');
 
+  // Regression guard: the push formation must hug tighter than the running formation.
+  // A wider push formation makes the horde visibly burst apart on contact.
+  const pushSpan = horde.leader.x - Math.min(...horde.zombies.map(z => z.x));
+  const runSpanOf = (n) => {
+    let min = Infinity, max = -Infinity;
+    for (let i = 1; i < n; i++) {
+      const col = Math.floor((i - 1) / 2), row = (i - 1) % 2;
+      const x = -30 - col * 24 + row * 6;
+      min = Math.min(min, x); max = Math.max(max, x);
+    }
+    return max - min;
+  };
+  const runSpan = runSpanOf(horde.zombies.length);
+  assert(
+    pushSpan <= runSpan * 1.15,
+    `Push formation never bursts wider than the running formation: push ${pushSpan.toFixed(1)}px <= run ${runSpan}px * 1.15`
+  );
+  assert(
+    pushSpan < 90,
+    `Push formation stays compact instead of stretching into a scattered line: ${pushSpan.toFixed(1)}px`
+  );
+
   const jumpDispatched = horde.jump(GAME_CONFIG.JUMP_FORCE);
   assert(jumpDispatched === true, 'Jump input is accepted during the push wait');
   assert(horde.leader.isPushing === false, 'Leader jump cancels its pushing lock');
@@ -232,6 +254,45 @@ function testGroupPushFormationAndJumpCancel() {
   CollisionManager.handleVehicles(cancelGame, 1 / 60);
   assert(cancelCar.isPushing === false, 'Player jump cancels the vehicle push interaction');
   assert(cancelGame.activePushVehicle === null, 'Cancelled push releases the active vehicle lock');
+}
+
+function testSoundDefaultByEnvironment() {
+  console.log('\n--- Testing Environment-Based Sound Default ---');
+
+  const KEY = 'ZOMBIE_TSUNAMI_SAVE_V1';
+  const hadLocalStorage = typeof globalThis.localStorage !== 'undefined';
+  const originalLocalStorage = globalThis.localStorage;
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k)
+  };
+
+  // 无存档且非本地环境，等同于远程部署首次访问，必须默认开启声音
+  const fresh = new Storage();
+  assert(
+    typeof fresh.data.soundEnabled === 'boolean',
+    `soundEnabled resolves to a boolean: ${fresh.data.soundEnabled}`
+  );
+  assert(
+    fresh.isSoundEnabled() === true,
+    'Remote deployment with no save defaults to sound enabled'
+  );
+
+  // 玩家手动关闭声音后，重新加载存档不得被环境默认值覆盖
+  fresh.toggleSound();
+  assert(fresh.isSoundEnabled() === false, 'toggleSound flips the preference to muted');
+
+  const reloaded = new Storage();
+  assert(
+    reloaded.isSoundEnabled() === false,
+    'Explicitly muted preference survives reload and is never overridden by the environment default'
+  );
+
+  store.delete(KEY);
+  globalThis.localStorage = hadLocalStorage ? originalLocalStorage : undefined;
+  if (!hadLocalStorage) delete globalThis.localStorage;
 }
 
 // 4. Storage & Missions Test
@@ -1137,6 +1198,7 @@ testJumpInputDispatch();
 testVehicleThresholds();
 testVehicleAnticipationTiming();
 testGroupPushFormationAndJumpCancel();
+testSoundDefaultByEnvironment();
 testStorageAndMissions();
 testVehiclePlatformFalling();
 testGroundedHordeWaveFormation();

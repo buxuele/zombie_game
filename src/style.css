@@ -765,10 +765,76 @@ body {
   background: var(--accent-green);
 }
 
-/* Game Over Screen */
-.game-over-panel {
-  padding: 24px 28px;
-  gap: 12px;
+/* ============================================================
+   Game Over Screen — 尸潮事故现场报告海报
+   刻意打破居中卡片堆叠：非对称头部、倾斜印章、胶带、记分牌
+   ============================================================ */
+.go-poster {
+  position: relative;
+  width: 620px;
+  max-width: 92vw;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 30px 34px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(231, 76, 60, 0.16), transparent 55%),
+    radial-gradient(ellipse at 88% 100%, rgba(46, 204, 113, 0.12), transparent 52%),
+    linear-gradient(168deg, #171a21 0%, #101218 58%, #141019 100%);
+  border: 1px solid #33303c;
+  border-radius: 4px;
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  animation: goPosterDrop 0.34s cubic-bezier(0.2, 1.1, 0.35, 1);
+}
+
+/* 纸张噪点纹理，避免大面积纯色发闷 */
+.go-poster::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.022) 0px,
+    rgba(255, 255, 255, 0.022) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+@keyframes goPosterDrop {
+  0% { transform: translateY(-26px) rotate(-0.6deg); opacity: 0; }
+  100% { transform: translateY(0) rotate(0); opacity: 1; }
+}
+
+/* 证物胶带 */
+.go-tape {
+  position: absolute;
+  width: 92px;
+  height: 24px;
+  background: linear-gradient(180deg, rgba(241, 196, 15, 0.34), rgba(241, 196, 15, 0.16));
+  border-left: 1px dashed rgba(241, 196, 15, 0.5);
+  border-right: 1px dashed rgba(241, 196, 15, 0.5);
+  pointer-events: none;
+}
+.go-tape-tr { top: 14px; right: 30px; transform: rotate(5deg); }
+
+/* 内容超长时才滚动，且不显示滚动条，避免破坏海报观感 */
+.go-poster::-webkit-scrollbar { width: 0; height: 0; }
+.go-poster { scrollbar-width: none; }
+
+/* 非对称头部：吉祥物在左，标题与印章在右 */
+.go-top {
+  display: grid;
+  grid-template-columns: 196px 1fr;
+  gap: 24px;
+  align-items: center;
 }
 
 .go-mascot-wrapper {
@@ -776,197 +842,297 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
+  gap: 2px;
   user-select: none;
 }
 
 #go-mascot-canvas {
   cursor: pointer;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+  width: 190px;
+  height: 113px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.65));
   transition: transform 0.1s ease;
 }
 
 #go-mascot-canvas:active {
-  transform: scale(0.92);
+  transform: scale(0.94);
 }
 
 .go-mascot-hint {
   font-size: 11px;
-  color: var(--text-muted);
-  opacity: 0.75;
-  margin-top: -2px;
+  color: var(--text-dim);
+  letter-spacing: 0.3px;
 }
 
-.go-header-row {
+.go-headline {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-}
-
-.go-badge {
-  background: rgba(231, 76, 60, 0.15);
-  border: 1px solid rgba(231, 76, 60, 0.4);
-  color: #ff7675;
-  padding: 4px 10px;
-  border-radius: var(--radius-btn);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
-
-.go-new-record-pill {
-  background: rgba(241, 196, 15, 0.15);
-  border: 1px solid rgba(241, 196, 15, 0.5);
-  color: #f1c40f;
-  padding: 4px 14px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 800;
-  margin: 0 auto;
-  letter-spacing: 1px;
-}
-
-.go-death-reason {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-btn);
-  padding: 8px 14px;
-  font-size: 13px;
-  color: #cbd5e1;
-  line-height: 1.4;
-  text-align: center;
-}
-
-.game-over-stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin: 4px 0;
-}
-
-.stat-box {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-card);
-  padding: 12px 14px;
-  text-align: center;
-}
-
-.stat-box-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
-
-.stat-box-value {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.go-actions-row {
-  display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 4px;
+  align-items: flex-start;
 }
 
-/* Pause Screen */
-.pause-panel {
-  width: 360px;
-  padding: 22px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  background-color: rgba(21, 24, 30, 0.96);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-card);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
-  animation: pausePanelPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes pausePanelPop {
-  0% { transform: scale(0.95); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-.pause-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pause-title {
-  margin-bottom: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--text-main);
-  letter-spacing: 1px;
-}
-
-.pause-mascot-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  user-select: none;
-  margin: -4px 0 2px 0;
-}
-
-#pause-mascot-canvas {
-  cursor: pointer;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
-  transition: transform 0.15s ease;
-}
-
-#pause-mascot-canvas:active {
-  transform: scale(0.95);
-}
-
-.pause-status-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  width: 100%;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-btn);
-  padding: 10px 14px;
-}
-
-.pause-stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-
-.pause-stat-label {
+.go-kicker {
   font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 2px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--accent-red);
+  opacity: 0.85;
 }
 
-.pause-stat-val {
+.go-title {
+  font-size: 52px;
+  line-height: 0.92;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: #fff;
+  text-shadow:
+    3px 3px 0 #8b1a10,
+    6px 6px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* 评级印章：故意倾斜，像刚盖上去的 */
+.go-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 6px 12px;
+  border: 2px solid var(--stamp-color, #e74c3c);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  transform: rotate(-4deg);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.go-stamp-rank {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  color: var(--stamp-color, #e74c3c);
+}
+
+.go-stamp-title {
   font-size: 14px;
   font-weight: 800;
+  letter-spacing: 1px;
+  color: #f3f5f9;
+}
+
+.go-stamp[data-rank="SSS"], .go-stamp[data-rank="SS"] { --stamp-color: #f1c40f; }
+.go-stamp[data-rank="A+"] { --stamp-color: #2ecc71; }
+.go-stamp[data-rank="A"]  { --stamp-color: #f39c12; }
+.go-stamp[data-rank="B"]  { --stamp-color: #e67e22; }
+.go-stamp[data-rank="C"]  { --stamp-color: #95a5a6; }
+
+/* 新纪录横幅 */
+.go-record {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 16px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(241, 196, 15, 0.2), rgba(241, 196, 15, 0.04));
+  border-left: 3px solid var(--accent-gold);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
   color: var(--accent-gold);
 }
 
-.pause-stat-divider {
-  width: 1px;
-  height: 20px;
-  background: var(--border-subtle);
+.go-record-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-gold);
+  animation: goRecordBlink 1s steps(2, end) infinite;
 }
 
-.pause-menu {
+@keyframes goRecordBlink {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.25; transform: scale(0.7); }
+}
+
+/* 现场报告条 */
+.go-incident {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: stretch;
+  border: 1px solid #33303c;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.go-incident-tag {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: rgba(231, 76, 60, 0.16);
+  border-right: 1px solid rgba(231, 76, 60, 0.32);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #ff7675;
+}
+
+.go-incident-text {
+  padding: 11px 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #d7dce6;
+}
+
+/* 记分牌：三等分，严格对齐，不再塌行 */
+.go-scoreboard {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: #2b2833;
+  border: 1px solid #2b2833;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.go-score {
+  padding: 14px 10px 13px;
+  text-align: center;
+  background: linear-gradient(180deg, #1b1e26, #14161c);
+}
+
+.go-score-label {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.go-score-value {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.5px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.go-score-value.is-gold { color: var(--accent-gold); }
+.go-score-value.is-green { color: var(--accent-green); }
+
+/* 主行动：整条大按钮，视觉第一优先 */
+.go-btn-retry {
   width: 100%;
-  margin-top: 4px;
+  padding: 15px 32px;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: #04170c;
+  background: linear-gradient(180deg, #52e08c, #27ae60);
+  border: none;
+  border-radius: 3px;
+  box-shadow: 0 6px 0 #1a7a41, 0 12px 24px rgba(39, 174, 96, 0.3);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.go-btn-retry:hover {
+  background: linear-gradient(180deg, #6ef0a2, #2ecc71);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 0 #1a7a41, 0 16px 30px rgba(39, 174, 96, 0.4);
+}
+
+.go-btn-retry:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #1a7a41, 0 6px 14px rgba(39, 174, 96, 0.3);
+}
+
+/* 次级行动：三个等宽并排，永不换行塌陷 */
+.go-actions-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.go-btn-alt {
+  padding: 11px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #3a3644;
+  color: var(--text-muted);
+}
+
+.go-btn-alt:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: #565268;
+  color: var(--text-main);
+}
+
+.go-btn-alt.is-gold {
+  color: var(--accent-gold);
+  border-color: rgba(241, 196, 15, 0.35);
+}
+
+.go-btn-alt.is-gold:hover {
+  background: rgba(241, 196, 15, 0.12);
+  border-color: var(--accent-gold);
+}
+
+/* Non-blocking Pause Hint (frame freezes only, no modal) */
+.hud-paused-hint {
+  position: absolute;
+  bottom: 74px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-main);
+  background: rgba(21, 24, 30, 0.88);
+  border: 1px solid var(--accent-gold);
+  border-radius: var(--radius-btn);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 20;
+  animation: pausedHintFade 0.18s ease-out;
+}
+
+@keyframes pausedHintFade {
+  0% { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Social Links Footer */
+.hud-social-links {
+  position: absolute;
+  bottom: 14px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  z-index: 15;
+  /* 父级 #hud-overlay 为 pointer-events: none，此处必须显式恢复，否则链接无法点击 */
+  pointer-events: auto;
+}
+
+.hud-social-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.hud-social-links a:hover {
+  color: var(--accent-gold);
+  border-bottom-color: var(--accent-gold);
+}
+
+.hud-social-divider {
+  opacity: 0.4;
 }
 
 /* Log Drawer */
