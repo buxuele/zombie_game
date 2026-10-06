@@ -305,5 +305,42 @@ git reset --soft HEAD~1
 git reset --hard HEAD
 git clean -fd
 
-4. 修改远程仓库的推送地址：
-git remote set-url origin https://buxuele:你的Token@github.com/buxuele/仓库名.git
+4. 修改远程仓库的推送地址，禁止内嵌令牌：
+git remote set-url origin https://github.com/buxuele/仓库名.git
+
+# 6. GitHub 令牌存放与取回规范
+
+1. 存放位置分层原则，三类密钥必须分开：
+- 应用运行时密钥，例如第三方接口 Key，放项目根目录 .env，并写入 .gitignore，源码只读环境变量。
+- GitHub 仓库操作凭据，放 macOS 钥匙串，由 credential.helper osxkeychain 托管，禁止写进 .git/config、.env 或 .zshrc。
+- CI 令牌，放仓库 Settings 的 Secrets，只在自动化环境注入。
+
+2. 令牌存入钥匙串：
+printf 'protocol=https\nhost=github.com\nusername=buxuele\npassword=你的Token\n\n' | git credential approve
+
+3. 从钥匙串取回令牌，仅在配置 CI 或新机器时需要：
+printf 'protocol=https\nhost=github.com\nusername=buxuele\n\n' | git credential fill
+
+4. 日常提交与推送无需任何令牌，git 会自动向钥匙串索取，直接执行：
+git add -A
+git commit -m "提交说明"
+git push origin main
+
+5. 绝对禁止用 .env 存放 GitHub 令牌，原因有四：
+- git 完全不读取 .env，写进去对 git push 零作用。
+- .env 是明文文件，与原先内嵌在 .git/config 中的风险同级，只是换了个存放位置。
+- 本项目使用 Vite 构建，.env 中所有 VITE_ 前缀变量会被编译进前端产物，令牌会直接暴露在浏览器可读的 JS 中。
+- .env 一旦忘记加入 .gitignore，第一次 git add 就会把令牌永久写入 Git 历史。
+
+6. 更彻底的方案是改用 SSH 密钥，配置一次后永久免密且令牌不落盘：
+ssh-keygen -t ed25519 -C "你的邮箱"
+cat ~/.ssh/id_ed25519.pub
+将输出的公钥粘贴到 GitHub 的 Settings 下的 SSH and GPG keys
+git remote set-url origin git@github.com:buxuele/仓库名.git
+ssh -T git@github.com
+
+7. 令牌泄露后的处置顺序：
+- 立刻到 GitHub 的 Settings 下的 Developer settings 打开 Personal access tokens，撤销旧令牌。
+- 新建细粒度令牌，只勾选目标仓库的 Contents 读写权限。
+- 新令牌直接执行第 2 条存入钥匙串，不要再写进任何文件。
+- 若令牌曾提交进 Git 历史，仅删除文件不够，必须配合 git filter-repo 重写历史并强推。

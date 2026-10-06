@@ -32,5 +32,9 @@ yarn-error.log*
 /seamless_bg_screenshot.png
 /game_over_fun_screen.png
 
+# Local Secrets
+.env
+.env.*
+
 # Large Demo Media
 /演示视频/
