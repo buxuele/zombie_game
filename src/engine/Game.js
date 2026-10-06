@@ -120,8 +120,26 @@ export class Game {
     }
   }
 
+  processJumpInput() {
+    if (!this.horde || this.horde.count === 0) {
+      this.input.consumeJumpPress();
+      this.input.consumeJumpRelease();
+      return;
+    }
+
+    if (this.input.consumeJumpPress()) {
+      this.horde.jump(this.jumpImpulse);
+    }
+
+    if (this.input.consumeJumpRelease()) {
+      this.horde.cutJump();
+    }
+  }
+
   loop(currentTime) {
     if (!this.isRunning || this.isPaused) return;
+
+    this.processJumpInput();
 
     let rawDt = Math.min((currentTime - this.lastTime) / 1000, 0.1);
     this.lastTime = currentTime;
@@ -166,14 +184,6 @@ export class Game {
     if (!this.activePushVehicle) {
       this.distance += (this.gameSpeed * dt) / 10;
       this.gameSpeed = this.initialSpeed + Math.min(240, Math.floor(this.distance / 70) * 8);
-    }
-
-    if (this.input.consumeJumpPress()) {
-      this.horde.jump(this.jumpImpulse);
-    }
-
-    if (this.input.consumeJumpRelease()) {
-      this.horde.cutJump();
     }
 
     this.transformations.update(dt, this.gameSpeed, this.horde, this.particles, this.renderer.camera, this.groundY);

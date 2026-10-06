@@ -4,6 +4,7 @@ import { VEHICLE_TYPES, Vehicle } from '../src/entities/Vehicle.js';
 import { assets } from '../src/engine/AssetLoader.js';
 import { Storage, storage } from '../src/systems/Storage.js';
 import { BiomeManager, THEME_SKY_GRADIENTS } from '../src/systems/BiomeManager.js';
+import { Game } from '../src/engine/Game.js';
 
 let passed = 0;
 let failed = 0;
@@ -23,7 +24,7 @@ function testJumpPhysics() {
   console.log('\n--- Testing Jump Physics & Max Height Limit ---');
   const z = new Zombie(0, 200, 492, true);
   const gravity = 800;
-  const jumpImpulse = 480;
+  const jumpImpulse = GAME_CONFIG.JUMP_FORCE;
   const dt = 1 / 60;
 
   z.jump(jumpImpulse);
@@ -39,8 +40,9 @@ function testJumpPhysics() {
     }
   }
 
-  assert(peakHeight > 120, `Jump reaches adequate height: ${peakHeight.toFixed(1)}px`);
-  assert(peakHeight <= 380, `Jump stays comfortably within screen viewport: ${peakHeight.toFixed(1)}px <= 380px`);
+  assert(GAME_CONFIG.JUMP_FORCE === 540, 'Jump impulse increased to 540 for longer jump distance');
+  assert(peakHeight > 160, `Jump reaches enhanced height: ${peakHeight.toFixed(1)}px`);
+  assert(peakHeight <= 440, `Jump stays comfortably within screen viewport: ${peakHeight.toFixed(1)}px <= 440px`);
 
   // Short tap jump cut test
   const zShort = new Zombie(1, 200, 492, true);
@@ -53,6 +55,22 @@ function testJumpPhysics() {
     if (h > shortPeak) shortPeak = h;
   }
   assert(shortPeak < peakHeight, `Short tap cut reduces jump peak: ${shortPeak.toFixed(1)}px < ${peakHeight.toFixed(1)}px`);
+}
+
+function testJumpReleaseLatency() {
+  console.log('\n--- Testing Immediate Jump Release ---');
+
+  const horde = new ZombieHorde(200, 540, 4);
+  horde.jump(GAME_CONFIG.JUMP_FORCE);
+  const leaderVelocityBeforeCut = horde.leader.vy;
+  horde.cutJump();
+
+  assert(horde.leader.vy > leaderVelocityBeforeCut, 'Leader short-tap cut applies immediately');
+  assert(horde.zombies[1].cutJumpPending === true, 'Queued follower receives an immediate pending cut');
+
+  horde.update(1 / 60, 300, 800, { isGroundAt: () => true }, false, null);
+  assert(horde.zombies[1].grounded === false, 'Queued follower still jumps after the release');
+  assert(horde.zombies[1].vy > -300, 'Queued follower receives the short-tap cut without timer delay');
 }
 
 // 2. Wave Jump Cascading Delay Test
@@ -68,11 +86,40 @@ function testWaveJumpCascade() {
   assert(horde.zombies[0].grounded === false, 'Leader jumps immediately');
   assert(horde.zombies[0].vy < 0, 'Leader has upward velocity');
 
-  // Follower 1 should have queued jump with 0.02s delay
+  // Follower 1 should have queued jump with 0.01s delay
   assert(horde.zombies[1].jumpQueued === true, 'Follower 1 has queued jump');
-  assert(Math.abs(horde.zombies[1].jumpDelayTimer - 0.02) < 0.001, 'Follower 1 delay is 0.02s');
-  assert(Math.abs(horde.zombies[2].jumpDelayTimer - 0.04) < 0.001, 'Follower 2 delay is 0.04s');
-  assert(Math.abs(horde.zombies[3].jumpDelayTimer - 0.06) < 0.001, 'Follower 3 delay is 0.06s');
+  assert(Math.abs(horde.zombies[1].jumpDelayTimer - 0.01) < 0.001, 'Follower 1 delay is 0.01s');
+  assert(Math.abs(horde.zombies[2].jumpDelayTimer - 0.02) < 0.001, 'Follower 2 delay is 0.02s');
+  assert(Math.abs(horde.zombies[3].jumpDelayTimer - 0.03) < 0.001, 'Follower 3 delay is 0.03s');
+
+  const largeHorde = new ZombieHorde(200, 540, 36);
+  largeHorde.jump(550);
+  const lastFollower = largeHorde.zombies[largeHorde.zombies.length - 1];
+  assert(lastFollower.jumpDelayTimer <= 0.16, 'Large horde wave delay is capped at 0.16s');
+}
+
+function testJumpInputDispatch() {
+  console.log('\n--- Testing Immediate Jump Input Dispatch ---');
+
+  const game = Object.create(Game.prototype);
+  let jumpCount = 0;
+  let cutCount = 0;
+
+  game.horde = {
+    count: 1,
+    jump: () => { jumpCount++; },
+    cutJump: () => { cutCount++; }
+  };
+  game.input = {
+    consumeJumpPress: () => true,
+    consumeJumpRelease: () => true
+  };
+  game.jumpImpulse = GAME_CONFIG.JUMP_FORCE;
+
+  game.processJumpInput();
+
+  assert(jumpCount === 1, 'Jump press is dispatched exactly once before the fixed physics step');
+  assert(cutCount === 1, 'Jump release is dispatched exactly once before the fixed physics step');
 }
 
 // 3. Vehicle Thresholds Test
@@ -87,6 +134,104 @@ function testVehicleThresholds() {
   assert(bus.required === 8, 'Bus requires 8 zombies');
   assert(tank.required === 12, 'Tank requires 12 zombies');
   assert(plane.required === 16, 'Airplane requires 16 zombies');
+}
+
+function testVehicleAnticipationTiming() {
+  console.log('\n--- Testing Mandatory Vehicle Pre-Impact Wait ---');
+
+  for (const type of Object.keys(VEHICLE_TYPES)) {
+    const vehicle = new Vehicle(400, 540, type);
+    vehicle.startPushing(true);
+    assert(vehicle.pushTimer === GAME_CONFIG.FALLBACK_PUSH_TIME_SUCCESS, `${type} success wait is configured at 0.42s`);
+    vehicle.update(GAME_CONFIG.FALLBACK_PUSH_TIME_SUCCESS - 1 / 60, null, null);
+    assert(vehicle.pushTimer > 0, `${type} does not settle before its success wait ends`);
+    vehicle.update(1 / 60, null, null);
+    assert(vehicle.pushTimer <= 0, `${type} settles after its success wait ends`);
+  }
+
+  const horde = new ZombieHorde(200, 540, 4);
+  const car = new Vehicle(210, 540, 'CAR');
+  const fakeGame = {
+    horde,
+    transformations: { activeType: null },
+    gameSpeed: 200,
+    level: { vehicles: [car], civilians: [] },
+    particles: {
+      spawn: () => {},
+      spawnAngelGhost: () => {},
+      spawnVehicleExplosion: () => {},
+      spawnVehicleDebris: () => {},
+      spawnShockwave: () => {}
+    },
+    floatingText: { spawn: () => {} },
+    renderer: { camera: { addTrauma: () => {} } },
+    activePushVehicle: null,
+    rewardCount: 0,
+    handleVehicleReward() {
+      this.rewardCount++;
+    }
+  };
+
+  CollisionManager.handleVehicles(fakeGame, 1 / 60);
+  assert(car.isPushing === true, 'A direct car collision enters the mandatory wait state');
+  assert(car.isFlipped === false, 'A car cannot flip on the first contact frame');
+
+  for (let step = 0; step < 25; step++) {
+    CollisionManager.handleVehicles(fakeGame, 1 / 60);
+  }
+  assert(car.isFlipped === false, 'A car remains stable throughout the 0.42s anticipation window');
+  assert(fakeGame.rewardCount === 0, 'No vehicle reward is granted before the anticipation window ends');
+
+  CollisionManager.handleVehicles(fakeGame, 1 / 60);
+  assert(car.isFlipped === true, 'A car flips after the mandatory anticipation window');
+  assert(fakeGame.rewardCount === 1, 'Vehicle reward is granted exactly after the anticipation window');
+}
+
+function testGroupPushFormationAndJumpCancel() {
+  console.log('\n--- Testing Group Push Formation & Jump Cancel ---');
+
+  const horde = new ZombieHorde(600, 540, 8);
+  horde.zombies.forEach((z, index) => {
+    z.x = 600 - index * 70;
+  });
+  horde.setPushing(true);
+
+  const terrain = { isGroundAt: () => true };
+  for (let step = 0; step < 30; step++) {
+    horde.update(1 / 60, 200, 800, terrain, false, null);
+  }
+
+  const leaderX = horde.leader.x;
+  const closePushers = horde.zombies.filter(z =>
+    z.x < leaderX + 20 && z.x > leaderX - 180
+  );
+  assert(closePushers.length >= 6, `At least six zombies visibly gather at the vehicle: ${closePushers.length}`);
+  assert(horde.zombies.every(z => z.isPushing), 'All visible zombies enter the pushing state');
+
+  const jumpDispatched = horde.jump(GAME_CONFIG.JUMP_FORCE);
+  assert(jumpDispatched === true, 'Jump input is accepted during the push wait');
+  assert(horde.leader.isPushing === false, 'Leader jump cancels its pushing lock');
+  assert(horde.leader.grounded === false, 'Leader immediately leaves the ground during push wait');
+
+  const cancelHorde = new ZombieHorde(200, 540, 4);
+  const cancelCar = new Vehicle(210, 540, 'CAR');
+  const cancelGame = {
+    horde: cancelHorde,
+    transformations: { activeType: null },
+    gameSpeed: 200,
+    level: { vehicles: [cancelCar], civilians: [] },
+    particles: { spawn: () => {}, spawnAngelGhost: () => {} },
+    floatingText: { spawn: () => {} },
+    renderer: { camera: { addTrauma: () => {} } },
+    activePushVehicle: null
+  };
+
+  CollisionManager.handleVehicles(cancelGame, 1 / 60);
+  assert(cancelCar.isPushing === true, 'Vehicle enters the push wait before the player reacts');
+  cancelHorde.jump(GAME_CONFIG.JUMP_FORCE);
+  CollisionManager.handleVehicles(cancelGame, 1 / 60);
+  assert(cancelCar.isPushing === false, 'Player jump cancels the vehicle push interaction');
+  assert(cancelGame.activePushVehicle === null, 'Cancelled push releases the active vehicle lock');
 }
 
 // 4. Storage & Missions Test
@@ -527,16 +672,28 @@ function testStrictTankRequiredThreshold() {
         new Vehicle(210, 540, 'TANK') // In direct physical contact
       ]
     },
-    particles: { spawnAngelGhost: () => {} },
-    floatingText: null,
+    particles: { spawn: () => {}, spawnAngelGhost: () => {} },
+    floatingText: { spawn: () => {} },
     renderer: { camera: { addTrauma: () => {} } }
   };
 
   const tank = fakeGame.level.vehicles[0];
   assert(tank.required === 12, 'Tank requires 12 zombies to flip');
   CollisionManager.handleVehicles(fakeGame, 1 / 60);
+  assert(tank.isPushing === true, 'Insufficiently staffed tank enters the 0.75s group push wait');
+  assert(tank.pushTimer === GAME_CONFIG.FALLBACK_PUSH_TIME_FAIL, 'Failure push wait uses the configured 0.75s duration');
+  assert(zombiesList[0].alive === true, 'Front zombie survives during the reaction window');
+
+  const failureFrames = Math.ceil((GAME_CONFIG.FALLBACK_PUSH_TIME_FAIL + 0.05) * 60);
+  for (let step = 0; step < failureFrames; step++) {
+    CollisionManager.handleVehicles(fakeGame, 1 / 60);
+  }
+
   assert(tank.isFlipped === false, 'Tank is STRICTLY NOT flipped when horde count (3) is less than required (12)');
-  assert(zombiesList[0].alive === false, 'Colliding front zombie is knocked out upon striking heavy tank with insufficient count');
+  assert(zombiesList[0].alive === false, 'Front zombie is knocked out only after the failed push wait');
+  assert(tank.isPushing === false, 'Failed push interaction exits after the reaction window');
+  assert(tank.pushLockout === true, 'Failed vehicle locks out repeated push attempts until the horde passes it');
+  assert(typeof audio.playPushFail === 'function', 'Disappointed push-fail sound is available');
 }
 
 // 24. Bomb Multi-Casualty Radius Explosion Test (1-3 Zombies)
@@ -974,8 +1131,12 @@ function testMenuMascotAndDiverseBiomeCycle() {
 
 // Run All Tests
 testJumpPhysics();
+testJumpReleaseLatency();
 testWaveJumpCascade();
+testJumpInputDispatch();
 testVehicleThresholds();
+testVehicleAnticipationTiming();
+testGroupPushFormationAndJumpCancel();
 testStorageAndMissions();
 testVehiclePlatformFalling();
 testGroundedHordeWaveFormation();

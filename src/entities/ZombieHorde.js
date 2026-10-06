@@ -75,25 +75,63 @@ export class ZombieHorde {
     const living = this.zombies.filter(z => z.alive && !z.isFallingInPit);
     if (living.length === 0) return;
 
-    audio.playJump();
+    let jumpDispatched = false;
 
     living.forEach((z, index) => {
+      z.cutJumpPending = false;
       if (index === 0) {
-        z.jump(impulse);
+        jumpDispatched = z.jump(impulse);
       } else {
-        z.queueJump(index * 0.02, impulse);
+        const waveDelay = Math.min(
+          index * GAME_CONFIG.JUMP_WAVE_STEP,
+          GAME_CONFIG.JUMP_WAVE_MAX_DELAY
+        );
+        z.queueJump(waveDelay, impulse);
+        jumpDispatched = true;
       }
     });
+
+    if (jumpDispatched) {
+      audio.playJump();
+    }
+
+    return jumpDispatched;
   }
 
   cutJump() {
     const living = this.zombies.filter(z => z.alive && !z.isFallingInPit);
+    living.forEach((z) => {
+      if (z.jumpQueued) {
+        z.cutJumpPending = true;
+      } else {
+        z.cutJump(0.45);
+      }
+    });
+  }
+
+  arrangePushingFormation(living, leader, dt) {
+    const visibleCount = Math.min(living.length, GAME_CONFIG.VEHICLE_PUSH_VISIBLE_COUNT);
+    const frontFollow = 1 - Math.exp(-20 * dt);
+    const rearFollow = 1 - Math.exp(-10 * dt);
+
     living.forEach((z, index) => {
-      setTimeout(() => {
-        if (z.alive) {
-          z.cutJump(0.45);
-        }
-      }, index * 20);
+      if (index === 0) return;
+
+      let targetX;
+      let targetDepth;
+
+      if (index < visibleCount) {
+        const rank = index - 1;
+        targetX = leader.x - 34 - rank * 34;
+        targetDepth = (rank % 2 === 0 ? -9 : 9) + Math.sin(leader.runTimer * 5 + index) * 2;
+      } else {
+        targetX = leader.x - 230 - (index - visibleCount) * 24;
+        targetDepth = Math.sin(leader.runTimer * 2 + index) * 4;
+      }
+
+      z.x += (targetX - z.x) * (index < visibleCount ? frontFollow : rearFollow);
+      z.layerDepth = targetDepth;
+      z.vx = 0;
     });
   }
 
@@ -108,6 +146,7 @@ export class ZombieHorde {
       leader.x += gameSpeed * dt;
     } else {
       leader.x += (gameSpeed * 0.35) * dt;
+      this.arrangePushingFormation(living, leader, dt);
     }
 
     if (isLevitating) {

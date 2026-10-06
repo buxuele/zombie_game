@@ -1,6 +1,7 @@
 import { audio } from '../engine/Audio.js';
 import { assets } from '../engine/AssetLoader.js';
 import { Civilian } from './Civilian.js';
+import { GAME_CONFIG } from '../config/GameConfig.js';
 
 export const VEHICLE_TYPES = {
   CAR: {
@@ -75,6 +76,7 @@ export class Vehicle {
     this.isPushing = false;
     this.willSucceed = false;
     this.pushTimer = 0;
+    this.pushLockout = false;
     this.coinShowerTimer = 0;
 
     // Suspension & chassis physics
@@ -86,10 +88,22 @@ export class Vehicle {
     if (this.isPushing || this.isFlipped) return;
     this.isPushing = true;
     this.willSucceed = willSucceed;
-    this.pushTimer = willSucceed ? 0.42 : 1.2;
+    this.pushLockout = false;
+    this.pushTimer = willSucceed
+      ? GAME_CONFIG.FALLBACK_PUSH_TIME_SUCCESS
+      : GAME_CONFIG.FALLBACK_PUSH_TIME_FAIL;
     this.suspensionY = 6;
     this.chassisTilt = -0.08;
     audio.playPushMetal();
+  }
+
+  cancelPushing() {
+    if (this.isFlipped) return;
+    this.isPushing = false;
+    this.willSucceed = false;
+    this.pushTimer = 0;
+    this.suspensionY = 0;
+    this.chassisTilt = 0;
   }
 
   flip(gameSpeed, particleSystem, floatingText, camera, level = null) {

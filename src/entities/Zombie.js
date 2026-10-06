@@ -53,6 +53,7 @@ export class Zombie {
     this.jumpDelayTimer = 0;
     this.jumpQueued = false;
     this.jumpImpulse = 0;
+    this.cutJumpPending = false;
 
     // Phase and Step frequency offset for lively unsynchronized crowd animation
     this.phaseOffset = (index * 1.57) % (Math.PI * 2);
@@ -70,9 +71,15 @@ export class Zombie {
   }
 
   jump(impulse) {
-    if (!this.alive || this.isFallingInPit || this.isPushing) return;
+    if (!this.alive || this.isFallingInPit) return false;
 
-    if (this.grounded || this.coyoteTimer > 0) {
+    const canStartGroundJump = this.grounded || this.coyoteTimer > 0;
+    const canStartAirFlap = !canStartGroundJump && this.airFlaps < 1 && this.airTime > 0.12;
+    if (!canStartGroundJump && !canStartAirFlap) return false;
+
+    this.isPushing = false;
+
+    if (canStartGroundJump) {
       this.grounded = false;
       this.coyoteTimer = 0;
       this.vy = -impulse;
@@ -82,21 +89,23 @@ export class Zombie {
       this.scaleY = 1.35;
       this.airTime = 0;
       this.airFlaps = 0;
-      this.hatVelocityY = -220; // Secondary motion: Hat pops upwards
+      this.hatVelocityY = -220;
 
       if (this.isLeader) {
         logger.jump(`领头僵尸起跳, 冲量: ${impulse.toFixed(0)}, 起跳高度: ${(GAME_CONFIG.GROUND_Y - this.y - this.height).toFixed(0)}px`);
       }
-    } else if (this.airFlaps < 1 && this.airTime > 0.12) {
-      this.vy = -Math.max(360, impulse * 0.75);
-      this.airFlaps++;
-      this.targetScaleX = 0.8;
-      this.targetScaleY = 1.28;
-      audio.playJump();
-      if (this.isLeader) {
-        logger.jump('领头僵尸空中二次振翅蓄力');
-      }
+      return true;
     }
+
+    this.vy = -Math.max(360, impulse * 0.75);
+    this.airFlaps++;
+    this.targetScaleX = 0.8;
+    this.targetScaleY = 1.28;
+    audio.playJump();
+    if (this.isLeader) {
+      logger.jump('领头僵尸空中二次振翅蓄力');
+    }
+    return true;
   }
 
   cutJump(factor = 0.65) {
@@ -157,6 +166,10 @@ export class Zombie {
       if (this.jumpDelayTimer <= 0) {
         this.jumpQueued = false;
         this.jump(this.jumpImpulse);
+        if (this.cutJumpPending) {
+          this.cutJump(0.45);
+          this.cutJumpPending = false;
+        }
       }
     }
 
@@ -175,7 +188,7 @@ export class Zombie {
       this.airTime += dt;
       if (this.coyoteTimer > 0) this.coyoteTimer -= dt;
 
-      if (isHoldingJump && this.vy < 220 && this.airTime < 0.95 && !this.isFallingInPit) {
+      if (isHoldingJump && this.vy < 220 && this.airTime < GAME_CONFIG.JUMP_GLIDE_MAX_TIME && !this.isFallingInPit) {
         this.vy += gravity * 0.32 * dt;
         this.isGliding = true;
 
@@ -274,7 +287,16 @@ export class Zombie {
     let bodyBob = 0;
     let armSwing = 0;
 
-    if (this.grounded && !this.isFallingInPit) {
+    const drawSecondArm = this.isPushing && this.grounded;
+    if (this.isPushing && this.grounded) {
+      const pushCycle = this.runTimer * 0.7 + this.phaseOffset;
+      leg1Angle = -0.38 + Math.sin(pushCycle) * 0.34;
+      leg2Angle = -0.38 + Math.sin(pushCycle + Math.PI) * 0.34;
+      leg1Knee = Math.max(0, -Math.sin(pushCycle - 0.35)) * 0.8;
+      leg2Knee = Math.max(0, -Math.sin(pushCycle + Math.PI - 0.35)) * 0.8;
+      bodyBob = Math.abs(Math.sin(pushCycle)) * 2.6;
+      armSwing = -6 + Math.sin(pushCycle + Math.PI) * 8;
+    } else if (this.grounded && !this.isFallingInPit) {
       leg1Angle = Math.sin(strideCycle) * 0.75;
       leg2Angle = Math.sin(strideCycle + Math.PI) * 0.75;
       leg1Knee = Math.max(0, -Math.sin(strideCycle - 0.4) * 0.95);
@@ -365,6 +387,17 @@ export class Zombie {
     ctx.roundRect(0, 0, 13, 5, 2.5);
     ctx.fill();
     ctx.restore();
+
+    if (drawSecondArm) {
+      ctx.fillStyle = skinColor;
+      ctx.save();
+      ctx.translate(-7, -26 - bodyBob);
+      ctx.rotate(((armSwing + 12) * Math.PI) / 180);
+      ctx.beginPath();
+      ctx.roundRect(0, 0, 12, 5, 2.5);
+      ctx.fill();
+      ctx.restore();
+    }
 
     this.drawHat(ctx, hatToDraw, -bodyBob, isQuarterback, isNinja);
     ctx.restore();

@@ -11,7 +11,10 @@ export const GAME_CONFIG = {
 
   // Base Physics
   GRAVITY: 800,
-  JUMP_FORCE: 480,
+  JUMP_FORCE: 540,
+  JUMP_GLIDE_MAX_TIME: 1.05,
+  JUMP_WAVE_STEP: 0.01,
+  JUMP_WAVE_MAX_DELAY: 0.16,
   TERMINAL_VELOCITY: 1200,
 
   // Dynamic Game Speeds
@@ -28,7 +31,8 @@ export const GAME_CONFIG = {
   LATE_GAME_HARD_DISTANCE: 25000,
   MID_GAME_DISTANCE: 12000,
 
-  // Vehicle Defaults
+  // Core vehicle anticipation timing
   FALLBACK_PUSH_TIME_SUCCESS: 0.42,
-  FALLBACK_PUSH_TIME_FAIL: 1.2
+  FALLBACK_PUSH_TIME_FAIL: 0.75,
+  VEHICLE_PUSH_VISIBLE_COUNT: 16
 };

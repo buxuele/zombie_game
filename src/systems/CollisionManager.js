@@ -1,6 +1,7 @@
 import { audio } from '../engine/Audio.js';
 import { storage } from './Storage.js';
 import { logger } from './Logger.js';
+import { GAME_CONFIG } from '../config/GameConfig.js';
 
 export class CollisionManager {
   static checkAABB(b1, b2) {
@@ -122,12 +123,30 @@ export class CollisionManager {
       v.update(dt, game.particles, game.level);
 
       if (v.isFlipped) continue;
+      if (v.pushLockout && !hasSuperPower) {
+        const leaderPassedVehicle = leader.x > v.x + v.width;
+        const leaderJumpedOverLockout = !leader.grounded && leader.vy < 0;
+        if (!leaderPassedVehicle && !leaderJumpedOverLockout) continue;
+        v.pushLockout = false;
+      }
 
       const hordeCount = game.horde.count;
 
       // Active crowd pushing / stacking state
       if (v.isPushing) {
         game.renderer.camera.addTrauma(0.04);
+
+        const leaderJumpedAway = !leader.isPushing && !leader.grounded && leader.vy < 0;
+        if (leaderJumpedAway) {
+          v.cancelPushing();
+          game.activePushVehicle = null;
+          game.horde.setPushing(false);
+          if (game.floatingText) {
+            game.floatingText.spawn(leader.x + 40, leader.y - 40, '改为跳跃越过', '#f1c40f', 22, 0.8);
+          }
+          logger.vehicle(`军团放弃推车，改为跳跃越过 ${v.config.name}`);
+          continue;
+        }
 
         if (v.pushTimer <= 0) {
           const currentCount = game.horde.count;
@@ -145,12 +164,15 @@ export class CollisionManager {
               collidingZombie.alive = false;
               game.particles.spawnAngelGhost(collidingZombie.x + collidingZombie.width / 2, collidingZombie.y);
             }
-            v.isPushing = false;
-            v.willSucceed = false;
+            if (game.floatingText) {
+              game.floatingText.spawn(v.x - 20, v.y - 28, '人数不足，推不动', '#f39c12', 24, 1.1);
+            }
+            v.cancelPushing();
+            v.pushLockout = true;
             game.activePushVehicle = null;
             game.horde.setPushing(false);
-            audio.playExplosion();
-            logger.collision(`人数不足 ${currentCount}/${v.required}, 撞击 ${v.config.name} 损失僵尸!`);
+            audio.playPushFail();
+            logger.collision(`人数不足 ${currentCount}/${v.required}, 合力推车失败并损失前排僵尸!`);
           }
         }
         continue;
@@ -183,7 +205,7 @@ export class CollisionManager {
 
         if (isDirectTouch) {
           if (hasSuperPower) {
-            // Super transformation powers (Tsunami/Mech/Dragon/Quarterback/Gold) destroy vehicle on physical contact
+            // Super transformation powers destroy vehicles on physical contact
             v.flip(game.gameSpeed, game.particles, game.floatingText, game.renderer.camera, game.level);
             if (isGold) {
               game.sessionCoins += v.config.coins * 2;
@@ -200,18 +222,18 @@ export class CollisionManager {
             z.vx = 0;
             if (!v.isPushing) {
               v.startPushing(true);
-              v.pushTimer = 0.18; // Quick punchy heave
               game.activePushVehicle = v;
               game.horde.setPushing(true);
-              logger.vehicle(`军团满编 ${hordeCount}/${v.required} 人合力掀翻 ${v.config.name}...`);
+              logger.vehicle(`军团满编 ${hordeCount}/${v.required} 人正在车头前蓄力...`);
             }
             break;
           } else {
-            // Strictly insufficient headcount: CANNOT push or flip! Knock out colliding front zombie
-            z.alive = false;
-            game.particles.spawnAngelGhost(z.x + z.width / 2, z.y);
-            audio.playPushMetal();
-            logger.collision(`人数不足 ${hordeCount}/${v.required}, 撞击 ${v.config.name} 损失前排僵尸!`);
+            z.x = Math.min(z.x, v.x - z.width);
+            z.vx = 0;
+            v.startPushing(false);
+            game.activePushVehicle = v;
+            game.horde.setPushing(true);
+            logger.vehicle(`军团仅有 ${hordeCount}/${v.required} 人，正在车头前拼力推挤 ${v.config.name}...`);
             break;
           }
         }

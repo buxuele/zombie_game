@@ -31,3 +31,6 @@ yarn-error.log*
 /panoramic_clean_screenshot.png
 /seamless_bg_screenshot.png
 /game_over_fun_screen.png
+
+# Large Demo Media
+/演示视频/

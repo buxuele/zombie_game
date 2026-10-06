@@ -180,6 +180,34 @@ class AudioManager {
     this.playNoiseBurst(0.18, 0.28);
   }
 
+  playPushFail() {
+    if (!this.ctx || !storage.isSoundEnabled()) return;
+    this.init();
+
+    const now = this.ctx.currentTime;
+    const notes = [
+      { offset: 0, from: 340, to: 210 },
+      { offset: 0.16, from: 250, to: 120 }
+    ];
+
+    notes.forEach((note) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(note.from, now + note.offset);
+      osc.frequency.exponentialRampToValueAtTime(note.to, now + note.offset + 0.18);
+      gain.gain.setValueAtTime(0.001, now + note.offset);
+      gain.gain.linearRampToValueAtTime(0.24, now + note.offset + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + note.offset + 0.2);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(now + note.offset);
+      osc.stop(now + note.offset + 0.22);
+    });
+
+    this.playNoiseBurst(0.18, 0.12);
+  }
+
   playHordeRoar() {
     if (!this.ctx || !storage.isSoundEnabled()) return;
     this.init();
