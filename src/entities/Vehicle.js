@@ -126,9 +126,7 @@ export class Vehicle {
     if (floatingText) {
       floatingText.spawn(this.x + this.width / 2, this.y - 30, `+${this.required} 齐心掀翻!`, '#f1c40f', 26);
     }
-    if (camera) {
-      camera.addTrauma(0.75);
-    }
+    // 掀翻瞬间不再震屏：剧烈抖动会让玩家看不清画面
 
     // Spawn fleeing civilian passengers from the overturned vehicle!
     if (level && this.config.survivors > 0) {

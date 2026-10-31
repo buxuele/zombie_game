@@ -134,8 +134,8 @@ export class CollisionManager {
 
       // Active crowd pushing / stacking state
       if (v.isPushing) {
-        game.renderer.camera.addTrauma(0.04);
-
+        // 推车阶段不再逐帧累加震屏。原先每帧 0.04，25 帧后就会顶到上限 1.0，
+        // 导致掀翻瞬间整屏剧烈抖动，玩家完全看不清画面。
         const leaderJumpedAway = !leader.isPushing && !leader.grounded && leader.vy < 0;
         if (leaderJumpedAway) {
           v.cancelPushing();

@@ -442,26 +442,6 @@ export class ParticleSystem {
     }
   }
 
-  spawnWeatherAtmosphere(cameraX, sceneType = 'CITY') {
-    if (Math.random() > 0.35) return;
-    const spawnX = cameraX + 1000 + Math.random() * 200;
-    const spawnY = Math.random() * 520;
-
-    if (sceneType === 'CITY') {
-      const neonColors = ['rgba(231, 76, 60, 0.6)', 'rgba(52, 152, 219, 0.6)', 'rgba(155, 89, 182, 0.6)'];
-      const c = neonColors[Math.floor(Math.random() * neonColors.length)];
-      this.spawn(spawnX, spawnY, -140 - Math.random() * 80, -20 + (Math.random() - 0.5) * 40, c, 2, 4, 3.0, 0, 'circle');
-    } else if (sceneType === 'BEACH') {
-      const seaColors = ['rgba(255, 255, 255, 0.5)', 'rgba(116, 185, 255, 0.5)'];
-      const c = seaColors[Math.floor(Math.random() * seaColors.length)];
-      this.spawn(spawnX, spawnY, -180 - Math.random() * 60, -10 + (Math.random() - 0.5) * 20, c, 2, 5, 2.5, 0, 'circle');
-    } else if (sceneType === 'DESERT') {
-      const sandColors = ['rgba(243, 156, 18, 0.6)', 'rgba(230, 126, 34, 0.5)'];
-      const c = sandColors[Math.floor(Math.random() * sandColors.length)];
-      this.spawn(spawnX, spawnY, -260 - Math.random() * 120, 10 + (Math.random() - 0.5) * 30, c, 3, 6, 2.0, 0, 'circle');
-    }
-  }
-
   spawnConfetti(width, height) {
     const colors = ['#f1c40f', '#2ecc71', '#ff4081', '#3498db', '#9b59b6', '#e74c3c'];
     for (let i = 0; i < 100; i++) {

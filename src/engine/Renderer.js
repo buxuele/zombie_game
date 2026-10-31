@@ -81,36 +81,27 @@ export class Renderer {
   }
 
   drawBackground(cameraX) {
-    // 1. Get smoothly crossfading visible zones
     const visibleZones = biomeManager.getRenderableZones(cameraX, this.width, assets);
+    if (!visibleZones.length) return;
 
-    // 2. Base continuous sky gradient layer (guarantees vibrant background with zero black voids)
+    // 只画当前权重最高的那一张背景。
+    // 原来的多图 alpha 叠加会在生态切换时出现重影，观感上就像整张背景被模糊了。
+    let activeZone = visibleZones[0];
     for (const vz of visibleZones) {
-      if (vz.alpha > 0.001) {
-        this.ctx.save();
-        this.ctx.globalAlpha = vz.alpha;
-        const visibleHeight = GAME_CONFIG.GROUND_Y;
-        const grad = this.ctx.createLinearGradient(0, 0, 0, visibleHeight);
-        const colors = vz.skyGradient || ['#0f172a', '#1e1b4b', '#3b0764', '#1e1b4b'];
-        grad.addColorStop(0, colors[0]);
-        grad.addColorStop(0.35, colors[1]);
-        grad.addColorStop(0.7, colors[2]);
-        grad.addColorStop(1, colors[3]);
-        this.ctx.fillStyle = grad;
-        this.ctx.fillRect(0, 0, this.width, this.height);
-        this.ctx.restore();
-      }
+      if (vz.alpha > activeZone.alpha) activeZone = vz;
     }
 
-    // 3. Render panoramic background images with smooth Hermite alpha crossfade
-    for (const vz of visibleZones) {
-      if (vz.alpha > 0.001) {
-        this.ctx.save();
-        this.ctx.globalAlpha = vz.alpha;
-        this.drawPanoramicBackground(vz.theme.img, cameraX, vz.theme.roadStyle, vz.progress);
-        this.ctx.restore();
-      }
-    }
+    const visibleHeight = GAME_CONFIG.GROUND_Y;
+    const grad = this.ctx.createLinearGradient(0, 0, 0, visibleHeight);
+    const colors = activeZone.skyGradient || ['#0f172a', '#1e1b4b', '#3b0764', '#1e1b4b'];
+    grad.addColorStop(0, colors[0]);
+    grad.addColorStop(0.35, colors[1]);
+    grad.addColorStop(0.7, colors[2]);
+    grad.addColorStop(1, colors[3]);
+    this.ctx.fillStyle = grad;
+    this.ctx.fillRect(0, 0, this.width, this.height);
+
+    this.drawPanoramicBackground(activeZone.theme.img, cameraX, activeZone.theme.roadStyle, activeZone.progress);
   }
 
   // Active High-Res Seamless Parallax Panning (Zero Seam, Single-Plate Horizon Slide)

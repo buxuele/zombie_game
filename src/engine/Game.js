@@ -205,10 +205,6 @@ export class Game {
 
     this.updateCollisions(dt);
 
-    // Dynamic weather atmosphere particles based on spatial biome
-    const biome = leader.x < 7000 ? 'CITY' : (leader.x < 16500 ? 'BEACH' : 'DESERT');
-    this.particles.spawnWeatherAtmosphere(leader.x, biome);
-
     // Audio underwater lowpass filter for Tsunami
     audio.setUnderwaterFilter(this.transformations.activeType === 'TSUNAMI');
 
