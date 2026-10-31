@@ -13,9 +13,13 @@ function resolveDefaultSoundEnabled() {
   return !isLocalDebugEnvironment();
 }
 
+const RELIEF_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
 const DEFAULT_DATA = {
   totalCoins: 200,
   highScoreDistance: 0,
+  lastReliefClaimAt: 0,
+  hasSeenTutorial: false,
   upgrades: {
     startZombies: 1,      // 1 to 4
     feverDuration: 1,     // 1 to 5
@@ -55,7 +59,7 @@ export class Storage {
         }
       }
     } catch (e) {
-      console.warn('Failed to load storage, using defaults:', e);
+      console.warn('读取本地存档失败，已回退到默认数据:', e);
     }
     return JSON.parse(JSON.stringify(DEFAULT_DATA));
   }
@@ -66,7 +70,7 @@ export class Storage {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
       }
     } catch (e) {
-      console.warn('Failed to save storage:', e);
+      console.warn('写入本地存档失败:', e);
     }
   }
 
@@ -84,10 +88,22 @@ export class Storage {
     return false;
   }
 
+  getReliefCooldownRemaining() {
+    const elapsed = Date.now() - (this.data.lastReliefClaimAt || 0);
+    return Math.max(0, RELIEF_COOLDOWN_MS - elapsed);
+  }
+
+  canClaimRelief() {
+    return this.getReliefCooldownRemaining() === 0;
+  }
+
+  // 救济金每日只能领取一次，避免无限点击刷金币
   claimReliefFund(amount = 150) {
+    if (!this.canClaimRelief()) return 0;
+    this.data.lastReliefClaimAt = Date.now();
     this.data.totalCoins += amount;
     this.save();
-    return this.data.totalCoins;
+    return amount;
   }
 
   updateHighScore(distance) {

@@ -15,21 +15,20 @@ export class MissionsUI {
     // Distance Trophy Milestone Showcase Header
     const trophyHeader = document.createElement('div');
     trophyHeader.className = 'trophy-showcase';
-    trophyHeader.style.cssText = 'background: #1e222b; border: 1px solid #2d3342; border-radius: 12px; padding: 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;';
 
     const trophyStage = highScore >= 2000 ? '地球主宰传奇金杯' : (highScore >= 1000 ? '狂暴天灾银杯' : (highScore >= 400 ? '丧尸领军铜杯' : '初出茅庐勋章'));
     const nextTarget = highScore >= 2000 ? 5000 : (highScore >= 1000 ? 2000 : (highScore >= 400 ? 1000 : 400));
     const trophyPercent = Math.min(100, Math.floor((highScore / nextTarget) * 100));
 
     trophyHeader.innerHTML = `
-      <div>
-        <div style="font-weight: 700; color: #ffffff; font-size: 15px;">远征里程碑奖杯: <span style="color: #f1c40f;">${trophyStage}</span></div>
-        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">最高奔跑纪录: ${highScore} / ${nextTarget} m (${trophyPercent}%)</div>
-        <div class="mission-progress-bar" style="margin-top: 8px; width: 260px;">
-          <div class="mission-progress-fill" style="width: ${trophyPercent}%; background: #f1c40f;"></div>
+      <div class="trophy-info">
+        <div class="trophy-title">远征里程碑奖杯: <strong>${trophyStage}</strong></div>
+        <div class="trophy-sub">最高奔跑纪录: ${highScore} / ${nextTarget} m，完成度 ${trophyPercent}%</div>
+        <div class="mission-progress-bar trophy-bar">
+          <div class="mission-progress-fill trophy-fill" style="width: ${trophyPercent}%;"></div>
         </div>
       </div>
-      <div style="font-size: 14px; color: #f1c40f; font-weight: 700;">DISTANCE TROPHY</div>
+      <div class="trophy-badge">远征奖杯</div>
     `;
     this.container.appendChild(trophyHeader);
 

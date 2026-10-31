@@ -72,6 +72,7 @@ export class Game {
     biomeManager.reset();
     this.particles.clear();
     this.floatingText.clear();
+    this.renderer.camera.reset();
 
     this.distance = 0;
     this.sessionCoins = 0;
@@ -103,6 +104,9 @@ export class Game {
       audio.stopBgm();
       logger.system('游戏已暂停');
     } else {
+      // 用空格恢复时，同一个按键会同时被 InputManager 记成跳跃按下，
+      // 必须在恢复瞬间开一个短暂抑制窗口，否则一恢复就自动起跳
+      this.input.suppressJumpFor(180);
       audio.startBgm();
       this.lastTime = performance.now();
       logger.system('游戏继续运行');
@@ -186,7 +190,7 @@ export class Game {
       this.gameSpeed = this.initialSpeed + Math.min(240, Math.floor(this.distance / 70) * 8);
     }
 
-    this.transformations.update(dt, this.gameSpeed, this.horde, this.particles, this.renderer.camera, this.groundY);
+    this.transformations.update(dt, this.gameSpeed, this.horde, this.particles, this.renderer.camera, GAME_CONFIG.GROUND_Y);
     this.horde.update(dt, this.gameSpeed, this.gravity, this.level, this.input.isHoldingJump, this.particles, false);
     this.level.update(leader.x, dt, this.particles);
 
@@ -215,7 +219,8 @@ export class Game {
     if (this.lastNotifiedRoadStyle && activeRoadStyle !== this.lastNotifiedRoadStyle) {
       const activeZone = biomeManager.zones.find(z => leader.x >= z.startX && leader.x <= z.endX);
       const zoneName = activeZone ? activeZone.theme.name : '新场景';
-      this.floatingText.spawn(640, 160, `已抵达新场景: ${zoneName}`, '#f1c40f', 28, 2.2);
+      // 必须跟随玩家世界坐标，固定在 640 会被相机甩到画面外
+      this.floatingText.spawn(leader.x + 220, 160, `已抵达新场景: ${zoneName}`, '#f1c40f', 28, 2.2);
       this.lastNotifiedRoadStyle = activeRoadStyle;
     }
 
@@ -254,7 +259,10 @@ export class Game {
     this.sessionCoins += v.config.coins;
     this.sessionFlippedVehicles += 1;
     storage.addCoins(v.config.coins);
-    storage.updateMission('cars_flipped', 1);
+    // 任务标题明确写的是轿车，坦克与客机不得计入
+    if (v.config.type === 'CAR') {
+      storage.updateMission('cars_flipped', 1);
+    }
 
     const bonusZombies = v.config.survivors || 2;
     for (let i = 0; i < bonusZombies; i++) {

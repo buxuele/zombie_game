@@ -17,6 +17,17 @@ export class Camera {
     this.trauma = Math.min(1.0, this.trauma + amount);
   }
 
+  // 重开一局必须把镜头拉回原点，否则会从上一局的位置缓慢滑回来
+  reset() {
+    this.x = 0;
+    this.y = 0;
+    this.targetX = 0;
+    this.trauma = 0;
+    this.shakeX = 0;
+    this.shakeY = 0;
+    this.zoom = 1.0;
+  }
+
   update(dt, targetX, leaderY = 486) {
     this.targetX = targetX - 220;
     this.x += (this.targetX - this.x) * Math.min(1, 10 * dt);

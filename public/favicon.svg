@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="僵尸狂潮">
+  <defs>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3fe08a"/>
+      <stop offset="1" stop-color="#24a45c"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="92" height="92" rx="20" fill="url(#skin)"/>
+  <circle cx="36" cy="42" r="13.5" fill="#ffffff"/>
+  <circle cx="65.5" cy="42" r="11.5" fill="#ffffff"/>
+  <circle cx="39.5" cy="42" r="6.2" fill="#10141a"/>
+  <circle cx="67.8" cy="42" r="5.2" fill="#10141a"/>
+  <rect x="33" y="66.5" width="37" height="9.5" rx="4.5" fill="#15181e"/>
+  <ellipse cx="41" cy="67.2" rx="2.6" ry="3.2" fill="#ffffff"/>
+  <ellipse cx="60" cy="67.2" rx="2.6" ry="3.2" fill="#ffffff"/>
+</svg>

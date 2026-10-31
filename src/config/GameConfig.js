@@ -34,5 +34,8 @@ export const GAME_CONFIG = {
   // Core vehicle anticipation timing
   FALLBACK_PUSH_TIME_SUCCESS: 0.42,
   FALLBACK_PUSH_TIME_FAIL: 0.75,
-  VEHICLE_PUSH_VISIBLE_COUNT: 16
+  VEHICLE_PUSH_VISIBLE_COUNT: 16,
+
+  // 新手保护：开局这段距离内，推车失败不会让军团直接全灭
+  NEWBIE_GRACE_DISTANCE: 220
 };

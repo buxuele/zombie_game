@@ -4,7 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>僵尸狂潮 PC 网页版</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%232ecc71'/><circle cx='40' cy='40' r='12' fill='%23ffffff'/><circle cx='44' cy='40' r='6' fill='%23000000'/><circle cx='70' cy='40' r='10' fill='%23ffffff'/><circle cx='72' cy='40' r='5' fill='%23000000'/><rect x='35' y='65' width='35' height='10' rx='4' fill='%2315181e'/></svg>">
+  <meta name="description" content="僵尸狂潮是一款基于 HTML5 Canvas 的横版僵尸跑酷游戏，操控不断壮大的僵尸军团感染平民、掀翻载具、触发超能变身。">
+  <meta name="theme-color" content="#2ecc71">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
@@ -60,6 +65,14 @@
 
         <!-- Non-blocking pause hint: frame freezes only, no modal -->
         <div id="hud-paused-hint" class="hud-paused-hint" style="display: none;">已暂停 · 按空格或点击继续恢复奔跑</div>
+
+        <!-- First-run tutorial, non-blocking -->
+        <div id="tutorial-hint" class="tutorial-hint" style="display: none;">
+          <div class="tutorial-title">出征须知</div>
+          <div class="tutorial-line"><span class="tutorial-key">空格</span>跳跃，长按可以滑翔更远</div>
+          <div class="tutorial-line"><span class="tutorial-key">载具</span>人数够就掀翻，不够就起跳越过</div>
+          <div class="tutorial-line"><span class="tutorial-key">P / Esc</span>暂停，切走窗口会自动暂停</div>
+        </div>
       </div>
 
       <!-- Main Menu Screen -->

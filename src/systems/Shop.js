@@ -76,7 +76,16 @@ export class ShopUI {
     // Relief Fund Button
     if (this.reliefBtn) {
       this.reliefBtn.addEventListener('click', () => {
-        const newTotal = storage.claimReliefFund(150);
+        const gained = storage.claimReliefFund(150);
+        if (gained <= 0) {
+          const remainMin = Math.ceil(storage.getReliefCooldownRemaining() / 60000);
+          const hours = Math.floor(remainMin / 60);
+          const mins = remainMin % 60;
+          this.setSpeech(`今天已经领过啦，${hours} 小时 ${mins} 分钟后再来。`);
+          audio.playBuyFail();
+          this.render();
+          return;
+        }
         audio.playCoin();
         this.triggerMerchantJoy();
         const reliefQuotes = [
@@ -145,6 +154,19 @@ export class ShopUI {
   updateWallet() {
     if (this.walletEl) {
       this.walletEl.textContent = storage.data.totalCoins.toLocaleString();
+    }
+    if (this.reliefBtn) {
+      const canClaim = storage.canClaimRelief();
+      this.reliefBtn.disabled = !canClaim;
+      this.reliefBtn.classList.toggle('is-claimed', !canClaim);
+      if (canClaim) {
+        this.reliefBtn.textContent = '救济金 +150';
+      } else {
+        const remainMin = Math.ceil(storage.getReliefCooldownRemaining() / 60000);
+        const hours = Math.floor(remainMin / 60);
+        const mins = remainMin % 60;
+        this.reliefBtn.textContent = `${hours} 小时 ${mins} 分后可领`;
+      }
     }
   }
 

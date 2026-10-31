@@ -103,7 +103,7 @@ export class CollisionManager {
       game.feverTimer = 4.0 + (feverLevel - 1) * 1.5;
       game.feverCombo = 0;
       audio.playFever();
-      game.floatingText.spawn(leader.x + 40, leader.y - 40, '狂热暴走 FEVER!', '#f1c40f', 32, 1.5);
+      game.floatingText.spawn(leader.x + 40, leader.y - 40, '狂热暴走！', '#f1c40f', 32, 1.5);
       game.renderer.camera.addTrauma(0.5);
     }
   }
@@ -160,19 +160,29 @@ export class CollisionManager {
             logger.vehicle(`全员满编 ${currentCount}/${v.required} 人合力掀翻 ${v.config.name}! 逃出乘客受到感染!`);
           } else {
             const collidingZombie = game.horde.zombies.find(z => z.alive && z.x + z.width >= v.x && z.x <= v.x + 40);
-            if (collidingZombie) {
+            // 新手保护：开局这段距离内，若推车失败会让军团全灭，则只失败不损失
+            const wouldWipeOut = game.horde.count <= 1;
+            const isGrace = wouldWipeOut && game.distance < GAME_CONFIG.NEWBIE_GRACE_DISTANCE;
+
+            if (collidingZombie && !isGrace) {
               collidingZombie.alive = false;
               game.particles.spawnAngelGhost(collidingZombie.x + collidingZombie.width / 2, collidingZombie.y);
             }
             if (game.floatingText) {
-              game.floatingText.spawn(v.x - 20, v.y - 28, '人数不足，推不动', '#f39c12', 24, 1.1);
+              if (isGrace) {
+                game.floatingText.spawn(v.x - 20, v.y - 40, '新手保护：军团挡住了这一下', '#2ecc71', 20, 1.4);
+              } else {
+                game.floatingText.spawn(v.x - 20, v.y - 28, '人数不足，推不动', '#f39c12', 24, 1.1);
+              }
             }
             v.cancelPushing();
             v.pushLockout = true;
             game.activePushVehicle = null;
             game.horde.setPushing(false);
             audio.playPushFail();
-            logger.collision(`人数不足 ${currentCount}/${v.required}, 合力推车失败并损失前排僵尸!`);
+            logger.collision(isGrace
+              ? `新手保护触发, 人数不足 ${currentCount}/${v.required}, 本次不损失僵尸`
+              : `人数不足 ${currentCount}/${v.required}, 合力推车失败并损失前排僵尸!`);
           }
         }
         continue;

@@ -8,12 +8,28 @@ export class InputManager {
     this.onPauseRequested = null;
     this.onMuteRequested = null;
 
+    // 恢复暂停后的短暂输入抑制窗口，防止同一个按键既恢复又起跳
+    this.suppressJumpUntil = 0;
+
     this.initListeners();
+  }
+
+  now() {
+    return typeof performance !== 'undefined' ? performance.now() : Date.now();
+  }
+
+  suppressJumpFor(ms = 180) {
+    this.suppressJumpUntil = this.now() + ms;
+    this.clearJumpBuffer();
   }
 
   initListeners() {
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        if (this.now() < this.suppressJumpUntil) {
+          e.preventDefault();
+          return;
+        }
         if (!e.repeat) {
           this.jumpJustPressed = true;
           this.isHoldingJump = true;
@@ -63,6 +79,12 @@ export class InputManager {
       this.jumpJustReleased = true;
       e.preventDefault();
     }, { passive: false });
+  }
+
+  clearJumpBuffer() {
+    this.jumpJustPressed = false;
+    this.jumpJustReleased = false;
+    this.isHoldingJump = false;
   }
 
   consumeJumpPress() {

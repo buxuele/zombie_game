@@ -5,6 +5,7 @@ import { assets } from '../src/engine/AssetLoader.js';
 import { Storage, storage } from '../src/systems/Storage.js';
 import { BiomeManager, THEME_SKY_GRADIENTS } from '../src/systems/BiomeManager.js';
 import { Game } from '../src/engine/Game.js';
+import { InputManager } from '../src/engine/Input.js';
 
 let passed = 0;
 let failed = 0;
@@ -293,6 +294,51 @@ function testSoundDefaultByEnvironment() {
   store.delete(KEY);
   globalThis.localStorage = hadLocalStorage ? originalLocalStorage : undefined;
   if (!hadLocalStorage) delete globalThis.localStorage;
+}
+
+function testInputBufferAndMissionScope() {
+  console.log('\n--- Testing Input Buffer Clear & Mission Scope ---');
+
+  // 1. 恢复暂停时清空跳跃缓冲，避免同一按键既恢复又起跳
+  const hadWindow = typeof globalThis.window !== 'undefined';
+  const originalWindow = globalThis.window;
+  globalThis.window = { addEventListener: () => {} };
+  const stubCanvas = { addEventListener: () => {} };
+  const input = new InputManager(stubCanvas);
+  input.jumpJustPressed = true;
+  input.jumpJustReleased = true;
+  input.isHoldingJump = true;
+  input.clearJumpBuffer();
+  assert(input.jumpJustPressed === false, 'clearJumpBuffer clears the pending jump press');
+  assert(input.jumpJustReleased === false, 'clearJumpBuffer clears the pending jump release');
+  assert(input.isHoldingJump === false, 'clearJumpBuffer clears the held jump state');
+
+  globalThis.window = hadWindow ? originalWindow : undefined;
+  if (!hadWindow) delete globalThis.window;
+
+  // 2. 掀翻载具任务只统计轿车，坦克与客机不得计入
+  const mission = storage.data.missions.find(m => m.type === 'cars_flipped');
+  const before = mission.current;
+
+  const fakeGame = {
+    sessionCoins: 0,
+    sessionFlippedVehicles: 0,
+    horde: { addZombie: () => {} }
+  };
+
+  Game.prototype.handleVehicleReward.call(fakeGame, {
+    x: 100,
+    config: { type: 'TANK', coins: 10, survivors: 0 }
+  });
+  assert(mission.current === before, 'Flipping a tank does not advance the car-only mission');
+
+  Game.prototype.handleVehicleReward.call(fakeGame, {
+    x: 100,
+    config: { type: 'CAR', coins: 10, survivors: 0 }
+  });
+  assert(mission.current === before + 1, 'Flipping a car advances the car-only mission by 1');
+
+  mission.current = before;
 }
 
 // 4. Storage & Missions Test
@@ -619,6 +665,61 @@ function testHazardVisibilityAndProgressiveDifficulty() {
   assert(lg.platforms[0].endX < lg.platforms[1].startX, 'Gap exists between platform 0 and 1');
   const gapWidth = lg.platforms[1].startX - lg.platforms[0].endX;
   assert(gapWidth === 200, `Chasm pit gap width is 200px: ${gapWidth}`);
+}
+
+// 16.5 Newbie Grace Test
+function testNewbieGrace() {
+  console.log('\n--- Testing Newbie Grace On Early Push Failure ---');
+
+  const zombies = [{ alive: true, x: 200, y: 492, width: 46, height: 48 }];
+  const tank = new Vehicle(210, 540, 'TANK');
+  const fakeGame = {
+    horde: {
+      leader: zombies[0],
+      zombies,
+      count: 1,
+      setPushing: () => {}
+    },
+    transformations: { activeType: null },
+    gameSpeed: 200,
+    distance: 100,
+    level: { vehicles: [tank] },
+    particles: { spawn: () => {}, spawnAngelGhost: () => {} },
+    floatingText: { spawn: () => {} },
+    renderer: { camera: { addTrauma: () => {} } },
+    activePushVehicle: null
+  };
+
+  CollisionManager.handleVehicles(fakeGame, 1 / 60);
+  const frames = Math.ceil((GAME_CONFIG.FALLBACK_PUSH_TIME_FAIL + 0.05) * 60);
+  for (let i = 0; i < frames; i++) {
+    CollisionManager.handleVehicles(fakeGame, 1 / 60);
+  }
+
+  assert(zombies[0].alive === true, 'Newbie grace keeps the last zombie alive on an early push failure');
+  assert(tank.isPushing === false, 'Early failed push still exits the interaction');
+  assert(tank.pushLockout === true, 'Early failed push still locks out immediate retry');
+
+  // 超过保护距离后必须恢复正常的失败惩罚
+  const lateZombies = [{ alive: true, x: 200, y: 492, width: 46, height: 48 }];
+  const lateTank = new Vehicle(210, 540, 'TANK');
+  const lateGame = {
+    horde: { leader: lateZombies[0], zombies: lateZombies, count: 1, setPushing: () => {} },
+    transformations: { activeType: null },
+    gameSpeed: 200,
+    distance: GAME_CONFIG.NEWBIE_GRACE_DISTANCE + 50,
+    level: { vehicles: [lateTank] },
+    particles: { spawn: () => {}, spawnAngelGhost: () => {} },
+    floatingText: { spawn: () => {} },
+    renderer: { camera: { addTrauma: () => {} } },
+    activePushVehicle: null
+  };
+
+  CollisionManager.handleVehicles(lateGame, 1 / 60);
+  for (let i = 0; i < frames; i++) {
+    CollisionManager.handleVehicles(lateGame, 1 / 60);
+  }
+  assert(lateZombies[0].alive === false, 'After the grace distance, push failure kills the front zombie again');
 }
 
 // 17. Vehicle Tire Ground Contact Invariant Test
@@ -1104,9 +1205,17 @@ function testShopAndEconomySystem() {
   // 4. Storage relief fund and coin economics
   const s = new Storage();
   s.data.totalCoins = 100;
-  const newTotal = s.claimReliefFund(150);
-  assert(newTotal === 250, 'claimReliefFund adds 150 coins: 250');
+  s.data.lastReliefClaimAt = 0;
+  const gained = s.claimReliefFund(150);
+  assert(gained === 150, 'claimReliefFund returns the gained amount: 150');
   assert(s.data.totalCoins === 250, 'Storage totalCoins updated to 250');
+
+  // 救济金每日一次，重复领取必须返回 0 且余额不变
+  const secondGain = s.claimReliefFund(150);
+  assert(secondGain === 0, 'claimReliefFund rejects a second claim within cooldown');
+  assert(s.data.totalCoins === 250, 'Balance stays 250 after a rejected relief claim');
+  assert(s.canClaimRelief() === false, 'canClaimRelief reports the cooldown');
+  assert(s.getReliefCooldownRemaining() > 0, 'Relief cooldown remaining is positive');
 
   // 5. Spend coins checks
   assert(s.spendCoins(200) === true, 'spendCoins(200) succeeds when balance is 250');
@@ -1176,14 +1285,20 @@ function testMenuMascotAndDiverseBiomeCycle() {
     assert(encounteredThemes.has(theme.id), `Diverse rotation includes theme: ${theme.id}`);
   }
 
-  // Verify no theme repeats within 3 consecutive zones
+  // Verify no theme repeats within 3 consecutive zones.
+  // 这里合并成一条断言，避免区域数量随机导致测试总数抖动。
+  let consecutiveRepeatFound = false;
   for (let i = 2; i < testBM.zones.length; i++) {
     const cur = testBM.zones[i].theme.id;
-    const prev1 = testBM.zones[i - 1].theme.id;
-    const prev2 = testBM.zones[i - 2].theme.id;
-    assert(cur !== prev1, `Zone ${i} does not repeat immediate previous zone`);
-    assert(cur !== prev2, `Zone ${i} does not repeat 2 zones ago`);
+    if (cur === testBM.zones[i - 1].theme.id || cur === testBM.zones[i - 2].theme.id) {
+      consecutiveRepeatFound = true;
+      break;
+    }
   }
+  assert(
+    consecutiveRepeatFound === false,
+    `No theme repeats within 3 consecutive zones across ${testBM.zones.length} generated zones`
+  );
 
   // 3. Road second line dashed guideline test
   const lg = new LevelGenerator();
@@ -1199,6 +1314,8 @@ testVehicleThresholds();
 testVehicleAnticipationTiming();
 testGroupPushFormationAndJumpCancel();
 testSoundDefaultByEnvironment();
+testInputBufferAndMissionScope();
+testNewbieGrace();
 testStorageAndMissions();
 testVehiclePlatformFalling();
 testGroundedHordeWaveFormation();

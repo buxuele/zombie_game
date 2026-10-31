@@ -1,17 +1,29 @@
 {
-  "name": "boat_game",
+  "name": "zombie_game",
   "version": "1.0.0",
   "type": "module",
-  "description": "",
+  "description": "僵尸狂潮 PC 网页版，基于 HTML5 Canvas 与原生 JavaScript 的横版僵尸跑酷游戏",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node tests/game_logic.test.js",
+    "icons": "node scripts/generate_icons.mjs"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "game",
+    "canvas",
+    "runner",
+    "zombie"
+  ],
+  "author": "buxuele",
   "license": "ISC",
+  "homepage": "https://github.com/buxuele/zombie_game",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/buxuele/zombie_game.git"
+  },
   "devDependencies": {
     "vite": "^8.2.1"
   }

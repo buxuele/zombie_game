@@ -30,6 +30,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const btnHudSound = document.getElementById('btn-hud-sound');
   const btnHudLog = document.getElementById('btn-hud-log');
 
+  // 调试日志入口只在开发环境暴露，生产构建下彻底移除
+  const isDevBuild = Boolean(import.meta.env && import.meta.env.DEV);
+  if (!isDevBuild) {
+    if (btnHudLog) btnHudLog.style.display = 'none';
+    if (btnToggleLogMenu) btnToggleLogMenu.style.display = 'none';
+    if (logDrawer) logDrawer.style.display = 'none';
+  }
+
   // HUD Elements
   const hudCoins = document.getElementById('hud-coins');
   const hudCoinMult = document.getElementById('hud-coin-mult');
@@ -46,6 +54,27 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Non-blocking pause hint
   const hudPausedHint = document.getElementById('hud-paused-hint');
+
+  // First-run tutorial
+  const tutorialHint = document.getElementById('tutorial-hint');
+  let tutorialTimer = null;
+
+  function hideTutorial() {
+    if (tutorialTimer) {
+      clearTimeout(tutorialTimer);
+      tutorialTimer = null;
+    }
+    if (tutorialHint) tutorialHint.style.display = 'none';
+  }
+
+  function showTutorialOnce() {
+    if (!tutorialHint) return;
+    if (storage.data.hasSeenTutorial) return;
+    storage.data.hasSeenTutorial = true;
+    storage.save();
+    tutorialHint.style.display = 'flex';
+    tutorialTimer = setTimeout(hideTutorial, 9000);
+  }
 
   // Menu Mascot Canvas
   const menuMascotCanvas = document.getElementById('menu-mascot-canvas');
@@ -580,14 +609,36 @@ window.addEventListener('DOMContentLoaded', async () => {
     logDrawer.style.display = 'none';
   });
 
+  if (canvas) {
+    canvas.addEventListener('pointerdown', hideTutorial, { once: true });
+  }
+
   window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+      hideTutorial();
+    }
     if (e.code === 'KeyL') {
       toggleLogDrawer();
     } else if ((e.code === 'Space' || e.code === 'Enter') && game && game.isPaused) {
+      // 先清空跳跃缓冲，避免恢复游戏的同时触发一次起跳
+      if (game.input) game.input.clearJumpBuffer();
       game.togglePause();
       e.preventDefault();
     }
   });
+
+  // 切走标签页或窗口失焦时自动暂停，防止玩家离开期间被障碍撞死
+  function autoPauseIfPlaying() {
+    if (game && game.isRunning && !game.isPaused) {
+      game.togglePause();
+    }
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) autoPauseIfPlaying();
+  });
+
+  window.addEventListener('blur', autoPauseIfPlaying);
 
   // Roll numbers in Game Over screen
   function animateRollNumber(element, targetValue, suffix = '', duration = 800) {
@@ -677,6 +728,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       updateMenuStats();
     },
     onGameOver: (stats) => {
+      hideTutorial();
       hudOverlay.style.display = 'none';
       showScreen(gameOverModal);
 
@@ -741,6 +793,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     showScreen(null);
     hudOverlay.style.display = 'block';
     game.start();
+    showTutorialOnce();
   });
 
   document.getElementById('btn-open-shop').addEventListener('click', () => {

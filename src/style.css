@@ -258,8 +258,22 @@ body {
   z-index: 100;
 }
 
+/* 主菜单铺一层真实生态背景，避免大片纯黑 */
+#main-menu-screen {
+  background-image:
+    radial-gradient(ellipse at 50% 18%, rgba(46, 204, 113, 0.16), transparent 62%),
+    linear-gradient(180deg, rgba(8, 10, 14, 0.42) 0%, rgba(8, 10, 14, 0.86) 100%),
+    url('/backgrounds/city.webp');
+  background-size: cover, cover, cover;
+  background-position: center, center, center;
+  background-repeat: no-repeat;
+}
+
 .modal-panel {
   width: 580px;
+  max-width: 92vw;
+  max-height: 88vh;
+  overflow-y: auto;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
@@ -268,6 +282,19 @@ body {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.modal-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-panel::-webkit-scrollbar-thumb {
+  background: #3a4152;
+  border-radius: 4px;
 }
 
 .modal-header {
@@ -370,11 +397,16 @@ body {
 
 .menu-panel {
   width: 520px;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  background:
+    linear-gradient(180deg, rgba(21, 24, 30, 0.72), rgba(16, 18, 24, 0.92));
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: var(--radius-card);
   padding: 26px 32px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -446,6 +478,16 @@ body {
 /* Shop Modal */
 .shop-modal-panel {
   max-width: 620px;
+}
+
+.btn-relief:disabled,
+.btn-relief.is-claimed {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: #3a3644;
+  color: var(--text-dim);
+  cursor: not-allowed;
+  font-size: 12px;
+  padding: 8px 12px;
 }
 
 .shop-header-actions {
@@ -562,9 +604,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: 380px;
-  overflow-y: auto;
-  padding-right: 6px;
+  /* 由外层 modal-panel 统一滚动，避免内外两层滚动容器互相裁切 */
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .shop-fitting-banner {
@@ -600,10 +643,23 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   background-color: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-card);
   padding: 12px 18px;
+}
+
+.shop-item-action {
+  flex: 0 0 auto;
+}
+
+/* 升级按钮收窄，避免视觉权重压过属性说明 */
+.shop-item-action .btn {
+  min-width: 120px;
+  padding: 9px 14px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .shop-item-info {
@@ -763,6 +819,58 @@ body {
 .mission-progress-fill {
   height: 100%;
   background: var(--accent-green);
+}
+
+.trophy-showcase {
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  padding: 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.trophy-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.trophy-title {
+  font-weight: 700;
+  color: var(--text-main);
+  font-size: 15px;
+}
+
+.trophy-title strong {
+  color: var(--accent-gold);
+  font-weight: 900;
+}
+
+.trophy-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.trophy-bar {
+  margin-top: 8px;
+  width: 260px;
+  max-width: 100%;
+}
+
+.trophy-fill {
+  background: var(--accent-gold);
+}
+
+.trophy-badge {
+  font-size: 14px;
+  color: var(--accent-gold);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* ============================================================
@@ -1102,6 +1210,60 @@ body {
 @keyframes pausedHintFade {
   0% { opacity: 0; transform: translateX(-50%) translateY(6px); }
   100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* First-run Tutorial */
+.tutorial-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 112px;
+  transform: translateX(-50%);
+  min-width: 320px;
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: rgba(16, 19, 25, 0.92);
+  border: 1px solid rgba(46, 204, 113, 0.45);
+  border-radius: var(--radius-card);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  z-index: 22;
+  animation: tutorialIn 0.3s ease-out;
+}
+
+@keyframes tutorialIn {
+  0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.tutorial-title {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--accent-green);
+  margin-bottom: 2px;
+}
+
+.tutorial-line {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tutorial-key {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border: 1px solid #3a3644;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 56px;
+  text-align: center;
 }
 
 /* Social Links Footer */
